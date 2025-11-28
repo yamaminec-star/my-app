@@ -592,6 +592,161 @@
         }
 
         /* オーバーレイは使用しない */
+
+        /* フレーム選択モーダル */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-window {
+            background: #3a3a3a;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            width: 90vw;
+            max-width: 1000px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: #555;
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #666;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .modal-close-btn {
+            background: #c74440;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close-btn:hover {
+            background: #d55550;
+        }
+
+        .modal-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .frame-filters {
+            background: #2a2a2a;
+            border-right: 2px solid #555;
+            padding: 20px;
+            width: 300px;
+            overflow-y: auto;
+        }
+
+        .filter-group {
+            margin-bottom: 20px;
+        }
+
+        .filter-group label {
+            display: block;
+            color: #ccc;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .filter-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-checkboxes label {
+            background: #4a4a4a;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: normal;
+            margin: 0;
+        }
+
+        .filter-checkboxes input[type="checkbox"] {
+            display: none;
+        }
+
+        .filter-checkboxes input[type="checkbox"]:checked + label {
+            background: #e67e3c;
+        }
+
+        .frame-grid {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            background: #3a3a3a;
+        }
+
+        .frame-item {
+            background: #4a4a4a;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .frame-item:hover {
+            background: #5a5a5a;
+            border-color: #e67e3c;
+        }
+
+        .frame-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .frame-item-name {
+            color: white;
+            font-size: 12px;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .loading {
+            color: #ccc;
+            text-align: center;
+            font-style: italic;
+            grid-column: 1 / -1;
+        }
     </style>
 </head>
 <body>
@@ -603,7 +758,7 @@
         <button id="top-mode-button" class="chevron-button mode-measure" title="測定モード">
             <span class="icon">straighten</span>
         </button>
-        <button class="chevron-button" id="open-frame-btn" title="フレームを開く">
+        <button class="chevron-button" id="open-frame-btn" title="フレーム選択">
             <span class="icon">eyeglasses</span>
         </button>
         <button class="chevron-button" id="color-window-btn" title="カラー設定">
@@ -858,6 +1013,38 @@
         </div>
     </div>
 
+    <!-- フレーム選択モーダル -->
+    <div id="frame-selector-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h3>フレーム選択</h3>
+                <button class="modal-close-btn" onclick="app.closeFrameSelector()">
+                    <span class="icon">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="frame-filters">
+                    <div class="filter-group">
+                        <label>シリーズ:</label>
+                        <div class="filter-checkboxes" id="series-filters"></div>
+                    </div>
+                    <div class="filter-group">
+                        <label>PD (55-70mm):</label>
+                        <div class="filter-checkboxes" id="pd-filters"></div>
+                    </div>
+                    <div class="filter-group">
+                        <label>ZP (140-160mm):</label>
+                        <div class="filter-checkboxes" id="zp-filters"></div>
+                    </div>
+                    <button onclick="app.updateFrameFilters()">フィルター適用</button>
+                </div>
+                <div class="frame-grid" id="frame-grid">
+                    <div class="loading">フレーム一覧を読み込み中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ステータスバー -->
     <div id="status-bar">準備完了</div>
 
@@ -936,6 +1123,18 @@
                 this.hueSliderDragging = false;
                 this.opacitySliderDragging = false;
                 
+                // フレーム選択関連
+                this.availableFrames = [];
+                this.filteredFrames = [];
+                this.frameFilters = {
+                    series: [],
+                    pd: [],
+                    zp: []
+                };
+                
+                // ウィンドウ位置保存
+                this.windowPositions = {};
+                
                 // 設定を読み込み
                 this.loadSettings();
                 
@@ -951,117 +1150,6 @@
                 
                 // 初期モードボタンの状態を設定
                 this.updateModeButton();
-            }
-
-            resetToInitialState() {
-                // 画像関連をクリア
-                this.baseImage = null;
-                this.frameImage = null;
-                this.originalFrameImage = null;
-                this.frameImageData = null;
-                this.baseImageName = '';
-                this.frameImageName = '';
-                
-                // 測定関連をリセット
-                this.measurementPoints = [];
-                this.pixelDistance = 0;
-                this.realDistance = 0;
-                this.scaleRatio = 0;
-                this.draggingPointIndex = -1;
-                
-                // フレーム位置をリセット
-                this.frameOffset = {x: 100, y: 100};
-                this.frameSize = {width: 0, height: 0};
-                this.originalFrameSize = {width: 0, height: 0};
-                this.dragging = false;
-                this.dragStart = {x: 0, y: 0};
-                
-                // 設定を初期値にリセット
-                this.baseRealSize = 60;
-                this.frameRealSize = 160;
-                this.mode = 'measure';
-                
-                // カラー設定をリセット
-                this.hue = 0;
-                this.saturation = 100;
-                this.brightness = 0;
-                this.opacity = 100;
-                this.pattern = 'solid';
-                this.seed = 42;
-                this.spotSize = '4-15';
-                this.stripeAngle = 95;
-                
-                // サブカラー設定をリセット
-                this.subHue = 0;
-                this.subSaturation = 0;
-                this.subBrightness = 0;
-                this.subOpacity = 0;
-                
-                // UI状態をリセット
-                this.colorWindowVisible = false;
-                this.infoWindowVisible = false;
-                this.currentColorTab = 'black';
-                this.colorPickerDragging = false;
-                this.hueSliderDragging = false;
-                this.opacitySliderDragging = false;
-                
-                // LocalStorageをクリア
-                localStorage.removeItem('faceMeasurementSettings');
-                
-                // ファイル入力をリセット
-                this.faceInput.value = '';
-                this.frameInput.value = '';
-                
-                // UIを初期状態に戻す
-                const topRealSizeInput = document.getElementById('top-real-size');
-                if (topRealSizeInput) topRealSizeInput.value = 60;
-                
-                const frameRealSizeInput = document.getElementById('frame-real-size-window');
-                if (frameRealSizeInput) frameRealSizeInput.value = 160;
-                
-                // ウィンドウを閉じて初期位置にリセット
-                const colorWindow = document.getElementById('color-window');
-                const infoWindow = document.getElementById('info-window');
-                const magnifier = document.getElementById('magnifier');
-                
-                colorWindow.classList.remove('show');
-                infoWindow.classList.remove('show');
-                magnifier.classList.remove('show');
-                
-                // ウィンドウの位置を初期値に戻す（transformをクリア）
-                colorWindow.style.transform = '';
-                infoWindow.style.transform = '';
-                magnifier.style.transform = '';
-                
-                // カラーピッカーUIを初期状態に戻す
-                this.updateColorPickerUI('black');
-                this.updateColorPickerUI('white');
-                this.switchColorTab('black');
-                
-                // パターン選択を初期状態に戻す
-                document.querySelectorAll('.pattern-option').forEach(opt => opt.classList.remove('active'));
-                document.querySelector('[data-pattern="solid"]').classList.add('active');
-                
-                // パターン設定の入力値をリセット
-                const seedInput = document.getElementById('seed');
-                if (seedInput) seedInput.value = 42;
-                
-                const spotSizeInput = document.getElementById('spot-size');
-                if (spotSizeInput) spotSizeInput.value = '4-15';
-                
-                const stripeAngleInput = document.getElementById('stripe-angle');
-                if (stripeAngleInput) stripeAngleInput.value = 95;
-                
-                // その他のUIを更新
-                this.updateModeButton();
-                this.updateStatusBar();
-                this.updateProductName();
-                this.updateInfoWindowContent();
-                
-                // キャンバスをクリア
-                this.redraw();
-                
-                console.log('アプリが初期状態にリセットされました');
             }
 
             loadSettings() {
@@ -1096,8 +1184,14 @@
                         if (data.subBrightness !== undefined) this.subBrightness = data.subBrightness;
                         if (data.subOpacity !== undefined) this.subOpacity = data.subOpacity;
                         
+                        // ウィンドウ位置
+                        if (data.windowPositions) this.windowPositions = data.windowPositions;
+                        
                         // UIに反映
-                        setTimeout(() => this.applySettingsToUI(), 100);
+                        setTimeout(() => {
+                            this.applySettingsToUI();
+                            this.restoreWindowPositions();
+                        }, 100);
                     }
                 } catch (e) {
                     console.error('設定の読み込みに失敗:', e);
@@ -1124,7 +1218,8 @@
                         subHue: this.subHue,
                         subSaturation: this.subSaturation,
                         subBrightness: this.subBrightness,
-                        subOpacity: this.subOpacity
+                        subOpacity: this.subOpacity,
+                        windowPositions: this.windowPositions
                     };
                     
                     localStorage.setItem('faceMeasurementSettings', JSON.stringify(settings));
@@ -1154,14 +1249,6 @@
             }
 
             setupEventListeners() {
-                // キーボードイベント
-                document.addEventListener('keydown', (e) => {
-                    if (e.shiftKey && e.key.toLowerCase() === 'c') {
-                        e.preventDefault();
-                        this.resetToInitialState();
-                    }
-                });
-                
                 // マウスイベント
                 this.canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
                 this.canvas.addEventListener('mousemove', (e) => {
@@ -1173,20 +1260,8 @@
                 this.canvas.addEventListener('mouseup', (e) => this.onMouseUp(e));
                 
                 // タッチイベント
-                this.canvas.addEventListener('touchstart', (e) => {
-                    this.onTouchStart(e);
-                    if (e.touches.length === 1 && this.mode === 'measure' && this.baseImage) {
-                        const touch = e.touches[0];
-                        this.updateMagnifier(touch.clientX, touch.clientY);
-                    }
-                }, {passive: false});
-                this.canvas.addEventListener('touchmove', (e) => {
-                    this.onTouchMove(e);
-                    if (e.touches.length === 1 && this.mode === 'measure' && this.baseImage) {
-                        const touch = e.touches[0];
-                        this.updateMagnifier(touch.clientX, touch.clientY);
-                    }
-                }, {passive: false});
+                this.canvas.addEventListener('touchstart', (e) => this.onTouchStart(e), {passive: false});
+                this.canvas.addEventListener('touchmove', (e) => this.onTouchMove(e), {passive: false});
                 this.canvas.addEventListener('touchend', (e) => this.onTouchEnd(e), {passive: false});
                 
                 // メニューバーボタン
@@ -1198,9 +1273,8 @@
                 
                 const openFrameBtn = document.getElementById('open-frame-btn');
                 if (openFrameBtn) openFrameBtn.addEventListener('click', () => {
-                    // 測定モードを終了して移動モードに切り替え
                     this.setAdjustMode();
-                    this.openFrameImage();
+                    this.openFrameSelector();
                 });
                 
                 const colorWindowBtn = document.getElementById('color-window-btn');
@@ -1317,6 +1391,15 @@
                         this.applyColorChange();
                     });
                 }
+                
+                // キーボードイベント（リセット機能）
+                document.addEventListener('keydown', (e) => {
+                    // Shift + C でリセット
+                    if (e.shiftKey && e.key === 'C') {
+                        e.preventDefault();
+                        this.resetAll();
+                    }
+                });
             }
 
             setupColorPicker(colorType) {
@@ -1826,10 +1909,6 @@
                 this.mode = 'measure';
                 this.updateModeButton();
                 this.updateStatusBar();
-                // 測定モードに切り替えたら拡大鏡を常に表示
-                if (this.baseImage) {
-                    this.magnifier.classList.add('show');
-                }
                 this.redraw();
             }
 
@@ -2258,9 +2337,6 @@
                     return;
                 }
                 
-                // 測定モードでは常に拡大鏡を表示
-                this.magnifier.classList.add('show');
-                
                 const rect = this.canvas.getBoundingClientRect();
                 const x = clientX - rect.left;
                 const y = clientY - rect.top;
@@ -2275,6 +2351,8 @@
                 
                 if (x >= imgX && x <= imgX + this.baseImage.width * scale &&
                     y >= imgY && y <= imgY + this.baseImage.height * scale) {
+                    
+                    this.magnifier.classList.add('show');
                     
                     const sourceX = (x - imgX) / scale;
                     const sourceY = (y - imgY) / scale;
@@ -2295,8 +2373,7 @@
                         magnifierSize
                     );
                 } else {
-                    // 画像エリア外でも拡大鏡は表示し続ける（測定モード時）
-                    // 内容は更新しないが表示は維持
+                    this.magnifier.classList.remove('show');
                 }
             }
 
@@ -2323,14 +2400,11 @@
                     let clickedPointIndex = -1;
                     for (let i = 0; i < this.measurementPoints.length; i++) {
                         const point = this.measurementPoints[i];
-                        // 画面座標での距離計算
-                        const screenPointX = imgX + point.x * scale;
-                        const screenPointY = imgY + point.y * scale;
                         const dist = Math.sqrt(
-                            Math.pow(x - screenPointX, 2) + 
-                            Math.pow(y - screenPointY, 2)
+                            Math.pow(relX - point.x, 2) + 
+                            Math.pow(relY - point.y, 2)
                         );
-                        if (dist < 30) {
+                        if (dist < 10) {
                             clickedPointIndex = i;
                             break;
                         }
@@ -2510,6 +2584,341 @@
                 link.href = this.canvas.toDataURL();
                 link.click();
             }
+
+            // フレーム選択関連の機能
+            async openFrameSelector() {
+                const modal = document.getElementById('frame-selector-modal');
+                modal.style.display = 'flex';
+                
+                if (this.availableFrames.length === 0) {
+                    await this.loadFrameList();
+                }
+                
+                this.setupFrameFilters();
+                this.updateFrameFilters();
+            }
+
+            closeFrameSelector() {
+                const modal = document.getElementById('frame-selector-modal');
+                modal.style.display = 'none';
+            }
+
+            async loadFrameList() {
+                try {
+                    const response = await fetch('./frames/frame-list.json');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    this.availableFrames = data.frames || data;
+                    console.log(`${this.availableFrames.length}個のフレームを読み込みました`);
+                } catch (error) {
+                    console.error('フレームリストの読み込みに失敗:', error);
+                    this.availableFrames = [];
+                    const grid = document.getElementById('frame-grid');
+                    grid.innerHTML = '<div class="loading">フレームリストの読み込みに失敗しました</div>';
+                }
+            }
+
+            setupFrameFilters() {
+                // シリーズ名を抽出
+                const seriesSet = new Set();
+                const pdSet = new Set();
+                const zpSet = new Set();
+
+                this.availableFrames.forEach(frame => {
+                    const filename = typeof frame === 'string' ? frame : frame.filename;
+                    const parsed = this.parseFrameFilename(filename);
+                    if (parsed) {
+                        seriesSet.add(parsed.series);
+                        pdSet.add(parsed.pd);
+                        zpSet.add(parsed.zp);
+                    }
+                });
+
+                // フィルターUIを作成
+                this.createFilterUI('series-filters', Array.from(seriesSet).sort());
+                this.createFilterUI('pd-filters', Array.from(pdSet).sort((a, b) => a - b));
+                this.createFilterUI('zp-filters', Array.from(zpSet).sort((a, b) => a - b));
+            }
+
+            parseFrameFilename(filename) {
+                const match = filename.match(/(.+?)(\d{3})_PD(\d+)_ZP(\d+)\.png/);
+                if (match) {
+                    return {
+                        series: match[1],
+                        number: match[2],
+                        pd: parseInt(match[3]),
+                        zp: parseInt(match[4])
+                    };
+                }
+                return null;
+            }
+
+            createFilterUI(containerId, values) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                container.innerHTML = '';
+                values.forEach(value => {
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `${containerId}-${value}`;
+                    checkbox.value = value;
+
+                    const label = document.createElement('label');
+                    label.htmlFor = checkbox.id;
+                    label.textContent = value;
+
+                    container.appendChild(checkbox);
+                    container.appendChild(label);
+                });
+            }
+
+            updateFrameFilters() {
+                // 選択されたフィルターを取得
+                const selectedSeries = this.getSelectedFilterValues('series-filters');
+                const selectedPD = this.getSelectedFilterValues('pd-filters');
+                const selectedZP = this.getSelectedFilterValues('zp-filters');
+
+                // フィルタリング
+                this.filteredFrames = this.availableFrames.filter(frame => {
+                    const filename = typeof frame === 'string' ? frame : frame.filename;
+                    const parsed = this.parseFrameFilename(filename);
+                    
+                    if (!parsed) return false;
+
+                    const seriesMatch = selectedSeries.length === 0 || selectedSeries.includes(parsed.series);
+                    const pdMatch = selectedPD.length === 0 || selectedPD.includes(parsed.pd.toString());
+                    const zpMatch = selectedZP.length === 0 || selectedZP.includes(parsed.zp.toString());
+
+                    return seriesMatch && pdMatch && zpMatch;
+                });
+
+                this.renderFrameGrid();
+            }
+
+            getSelectedFilterValues(containerId) {
+                const container = document.getElementById(containerId);
+                if (!container) return [];
+
+                const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
+                return Array.from(checkboxes).map(cb => cb.value);
+            }
+
+            renderFrameGrid() {
+                const grid = document.getElementById('frame-grid');
+                if (!grid) return;
+
+                if (this.filteredFrames.length === 0) {
+                    grid.innerHTML = '<div class="loading">条件に一致するフレームが見つかりません</div>';
+                    return;
+                }
+
+                grid.innerHTML = '';
+                this.filteredFrames.forEach(frame => {
+                    const filename = typeof frame === 'string' ? frame : frame.filename;
+                    const frameItem = this.createFrameItem(filename);
+                    grid.appendChild(frameItem);
+                });
+            }
+
+            createFrameItem(filename) {
+                const item = document.createElement('div');
+                item.className = 'frame-item';
+
+                const img = document.createElement('img');
+                img.src = `./frames/${filename}`;
+                img.alt = filename;
+                img.onerror = () => {
+                    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkVycm9yPC90ZXh0Pgo8L3N2Zz4K';
+                };
+
+                const name = document.createElement('div');
+                name.className = 'frame-item-name';
+                name.textContent = filename.replace('.png', '');
+
+                item.appendChild(img);
+                item.appendChild(name);
+
+                item.addEventListener('click', () => this.selectFrame(filename));
+
+                return item;
+            }
+
+            async selectFrame(filename) {
+                try {
+                    this.frameImageName = filename;
+                    
+                    const img = new Image();
+                    img.onload = () => {
+                        this.originalFrameImage = img;
+                        this.originalFrameSize = {
+                            width: img.width,
+                            height: img.height
+                        };
+                        this.applyColorAndResize();
+                        this.redraw();
+                        this.updateStatusBar();
+                        this.updateInfoWindowContent();
+                        this.updateProductName();
+                        this.saveSettings();
+                        this.closeFrameSelector();
+                    };
+                    
+                    img.onerror = () => {
+                        console.error('フレーム画像の読み込みに失敗:', filename);
+                    };
+                    
+                    img.src = `./frames/${filename}`;
+                } catch (error) {
+                    console.error('フレーム選択エラー:', error);
+                }
+            }
+
+            // ウィンドウ位置保存関連の機能
+            saveWindowPosition(windowId) {
+                const windowElement = document.getElementById(windowId);
+                if (!windowElement) {
+                    console.warn(`ウィンドウが見つかりません: ${windowId}`);
+                    return;
+                }
+
+                // 現在のtransform値を取得
+                const style = window.getComputedStyle(windowElement);
+                const transform = style.transform;
+                
+                let x = 0, y = 0;
+                
+                if (transform && transform !== 'none') {
+                    const match = transform.match(/matrix\([\d\.\-\s,]+,\s*([\d\.\-]+),\s*([\d\.\-]+)\)/);
+                    if (match) {
+                        // matrix形式の場合
+                        x = parseFloat(match[1]);
+                        y = parseFloat(match[2]);
+                    } else {
+                        // translate形式の場合
+                        const translateMatch = transform.match(/translate\(([\d\.\-]+)px,\s*([\d\.\-]+)px\)/);
+                        if (translateMatch) {
+                            x = parseFloat(translateMatch[1]);
+                            y = parseFloat(translateMatch[2]);
+                        }
+                    }
+                } else {
+                    // transformがない場合は0,0として保存（CSS初期位置を使用）
+                    x = 0;
+                    y = 0;
+                }
+
+                this.windowPositions[windowId] = { x, y };
+                console.log(`ウィンドウ位置を保存: ${windowId} -> (${x}, ${y})`);
+                
+                // 設定を保存
+                this.saveSettings();
+            }
+
+            restoreWindowPositions() {
+                // 保存された位置を復元、または初期位置にリセット
+                Object.keys(this.windowPositions).forEach(windowId => {
+                    const windowElement = document.getElementById(windowId);
+                    if (windowElement && this.windowPositions[windowId]) {
+                        const pos = this.windowPositions[windowId];
+                        // 保存された位置を復元（transformを使用）
+                        windowElement.style.left = '';
+                        windowElement.style.top = '';
+                        windowElement.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+                        console.log(`位置復元: ${windowId} -> (${pos.x}, ${pos.y})`);
+                    }
+                });
+                
+                // 保存された位置がない場合はCSSデフォルト位置をそのまま使用
+                // （CSSでcalc()で中央配置済み）
+            }
+
+            // 全リセット機能
+            resetAll() {
+                console.log('アプリを初期状態にリセットします...');
+                
+                // 画像をクリア
+                this.baseImage = null;
+                this.frameImage = null;
+                this.originalFrameImage = null;
+                this.frameImageData = null;
+                this.baseImageName = '';
+                this.frameImageName = '';
+                
+                // 測定データをクリア
+                this.measurementPoints = [];
+                this.pixelDistance = 0;
+                this.realDistance = 0;
+                this.scaleRatio = 0;
+                this.draggingPointIndex = -1;
+                
+                // 設定を初期値に戻す
+                this.baseRealSize = 60;
+                this.frameRealSize = 160;
+                this.frameOffset = {x: 100, y: 100};
+                this.frameSize = {width: 0, height: 0};
+                this.originalFrameSize = {width: 0, height: 0};
+                
+                // カラー設定を初期値に戻す
+                this.hue = 0;
+                this.saturation = 100;
+                this.brightness = 0;
+                this.opacity = 100;
+                this.pattern = 'solid';
+                this.seed = 42;
+                this.spotSize = '4-15';
+                this.stripeAngle = 95;
+                this.subHue = 0;
+                this.subSaturation = 0;
+                this.subBrightness = 0;
+                this.subOpacity = 0;
+                
+                // ウィンドウ位置をクリア
+                this.windowPositions = {};
+                
+                // UI状態をリセット
+                this.colorWindowVisible = false;
+                this.infoWindowVisible = false;
+                this.currentColorTab = 'black';
+                this.mode = 'measure';
+                
+                // ウィンドウを閉じる
+                const colorWindow = document.getElementById('color-window');
+                if (colorWindow) colorWindow.classList.remove('show');
+                
+                const infoWindow = document.getElementById('info-window');
+                if (infoWindow) infoWindow.classList.remove('show');
+                
+                const frameModal = document.getElementById('frame-selector-modal');
+                if (frameModal) frameModal.style.display = 'none';
+                
+                // ファイル入力をクリア
+                if (this.faceInput) this.faceInput.value = '';
+                if (this.frameInput) this.frameInput.value = '';
+                
+                // LocalStorageをクリア
+                localStorage.removeItem('faceMeasurementSettings');
+                
+                // ウィンドウ位置を初期値に戻す（transformをクリア）
+                ['magnifier', 'info-window', 'color-window'].forEach(windowId => {
+                    const windowElement = document.getElementById(windowId);
+                    if (windowElement) {
+                        windowElement.style.transform = '';
+                        console.log(`ウィンドウ位置をリセット: ${windowId}`);
+                    }
+                });
+                
+                // UIを更新
+                this.applySettingsToUI();
+                this.updateModeButton();
+                this.updateStatusBar();
+                this.updateInfoWindowContent();
+                this.redraw();
+                
+                console.log('リセット完了');
+            }
         }
 
         // ウィンドウドラッグ機能
@@ -2563,6 +2972,11 @@
                 initialX = currentX;
                 initialY = currentY;
                 isDragging = false;
+                
+                // ウィンドウ位置を保存
+                if (app && windowElement.id) {
+                    app.saveWindowPosition(windowElement.id);
+                }
             }
 
             function setTranslate(xPos, yPos, el) {
@@ -2635,6 +3049,11 @@
                 initialX = currentX;
                 initialY = currentY;
                 isDragging = false;
+                
+                // 拡大鏡の位置を保存
+                if (app && magnifierElement.id) {
+                    app.saveWindowPosition(magnifierElement.id);
+                }
             }
 
             function setTranslate(xPos, yPos, el) {
