@@ -1909,6 +1909,10 @@
                 this.mode = 'measure';
                 this.updateModeButton();
                 this.updateStatusBar();
+                // 測定モードに切り替えたら拡大鏡を表示
+                if (this.baseImage) {
+                    this.magnifier.classList.add('show');
+                }
                 this.redraw();
             }
 
@@ -1959,6 +1963,12 @@
                         this.updateStatusBar();
                         this.updateInfoWindowContent();
                         this.updateProductName();
+                        
+                        // 測定モードの場合は拡大鏡を表示
+                        if (this.mode === 'measure') {
+                            this.magnifier.classList.add('show');
+                        }
+                        
                         this.saveSettings();
                     };
                     img.src = e.target.result;
@@ -2331,10 +2341,12 @@
             updateMagnifier(clientX, clientY) {
                 if (!this.baseImage) return;
                 
-                // 測定モードの時のみ拡大鏡を表示
+                // 測定モードの時は常に拡大鏡を表示
                 if (this.mode !== 'measure') {
                     this.magnifier.classList.remove('show');
                     return;
+                } else {
+                    this.magnifier.classList.add('show');
                 }
                 
                 const rect = this.canvas.getBoundingClientRect();
@@ -2349,32 +2361,35 @@
                 const imgX = (this.canvas.width - this.baseImage.width * scale) / 2;
                 const imgY = (this.canvas.height - this.baseImage.height * scale) / 2;
                 
+                // 画像外でも拡大鏡を更新（測定モードでは常に表示）
+                let sourceX, sourceY;
+                
                 if (x >= imgX && x <= imgX + this.baseImage.width * scale &&
                     y >= imgY && y <= imgY + this.baseImage.height * scale) {
-                    
-                    this.magnifier.classList.add('show');
-                    
-                    const sourceX = (x - imgX) / scale;
-                    const sourceY = (y - imgY) / scale;
-                    
-                    const magnifierSize = 220;
-                    const sourceSize = magnifierSize / this.magnifierZoom;
-                    
-                    this.magnifierCtx.clearRect(0, 0, magnifierSize, magnifierSize);
-                    
-                    this.magnifierCtx.drawImage(
-                        this.baseImage,
-                        sourceX - sourceSize / 2,
-                        sourceY - sourceSize / 2,
-                        sourceSize,
-                        sourceSize,
-                        0, 0,
-                        magnifierSize,
-                        magnifierSize
-                    );
+                    // 画像内の場合
+                    sourceX = (x - imgX) / scale;
+                    sourceY = (y - imgY) / scale;
                 } else {
-                    this.magnifier.classList.remove('show');
+                    // 画像外の場合は境界にクランプ
+                    sourceX = Math.max(0, Math.min(this.baseImage.width, (x - imgX) / scale));
+                    sourceY = Math.max(0, Math.min(this.baseImage.height, (y - imgY) / scale));
                 }
+                
+                const magnifierSize = 220;
+                const sourceSize = magnifierSize / this.magnifierZoom;
+                
+                this.magnifierCtx.clearRect(0, 0, magnifierSize, magnifierSize);
+                
+                this.magnifierCtx.drawImage(
+                    this.baseImage,
+                    Math.max(0, sourceX - sourceSize / 2),
+                    Math.max(0, sourceY - sourceSize / 2),
+                    sourceSize,
+                    sourceSize,
+                    0, 0,
+                    magnifierSize,
+                    magnifierSize
+                );
             }
 
             onMouseDown(e) {
@@ -2396,15 +2411,18 @@
                 const relY = (y - imgY) / scale;
                 
                 if (this.mode === 'measure') {
-                    // 既存の測定点をクリックしたかチェック
+                    // 既存の測定点をクリックしたかチェック（画面座標で30ピクセル）
                     let clickedPointIndex = -1;
                     for (let i = 0; i < this.measurementPoints.length; i++) {
                         const point = this.measurementPoints[i];
-                        const dist = Math.sqrt(
-                            Math.pow(relX - point.x, 2) + 
-                            Math.pow(relY - point.y, 2)
+                        // 画面座標での距離を計算
+                        const screenPointX = imgX + point.x * scale;
+                        const screenPointY = imgY + point.y * scale;
+                        const screenDist = Math.sqrt(
+                            Math.pow(x - screenPointX, 2) + 
+                            Math.pow(y - screenPointY, 2)
                         );
-                        if (dist < 10) {
+                        if (screenDist < 30) { // 画面座標で30ピクセル
                             clickedPointIndex = i;
                             break;
                         }
@@ -2487,6 +2505,12 @@
                 e.preventDefault();
                 if (e.touches.length === 1) {
                     const touch = e.touches[0];
+                    
+                    // 拡大鏡を更新
+                    if (this.mode === 'measure' && this.baseImage) {
+                        this.updateMagnifier(touch.clientX, touch.clientY);
+                    }
+                    
                     const mouseEvent = new MouseEvent('mousedown', {
                         clientX: touch.clientX,
                         clientY: touch.clientY
@@ -2499,6 +2523,12 @@
                 e.preventDefault();
                 if (e.touches.length === 1) {
                     const touch = e.touches[0];
+                    
+                    // 拡大鏡を更新
+                    if (this.mode === 'measure' && this.baseImage) {
+                        this.updateMagnifier(touch.clientX, touch.clientY);
+                    }
+                    
                     const mouseEvent = new MouseEvent('mousemove', {
                         clientX: touch.clientX,
                         clientY: touch.clientY
