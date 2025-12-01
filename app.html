@@ -299,20 +299,18 @@
         #color-window .rgba-value {
             font-size: 14px;
         }
-        
-        #color-window .pattern-input {
-            font-size: 12px;
-            padding: 6px 10px;
-        }
-        
-        #color-window .pattern-option {
-            padding: 12px;
-        }
 
         #info-window {
             top: 140px;
             left: calc(50% - 200px);
             width: 400px;
+            max-height: 70vh;
+        }
+        
+        #texture-window {
+            top: 140px;
+            left: calc(50% + 50px);
+            width: 500px;
             max-height: 70vh;
         }
         
@@ -543,53 +541,7 @@
         }
 
         /* パターンオプション */
-        .pattern-options {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 16px;
-        }
 
-        .pattern-option {
-            background: #2a2a2a;
-            padding: 16px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid transparent;
-        }
-
-        .pattern-option:hover {
-            background: #3a3a3a;
-        }
-
-        .pattern-option.active {
-            background: #4a4a4a;
-            border-color: #e67e3c;
-        }
-
-        .pattern-label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: #ccc;
-        }
-
-        .pattern-input {
-            width: 100%;
-            padding: 8px 12px;
-            background: #2a2a2a;
-            border: 2px solid #555;
-            border-radius: 6px;
-            color: white;
-            font-size: 14px;
-        }
-
-        .pattern-input:focus {
-            outline: none;
-            border-color: #e67e3c;
-        }
 
         /* オーバーレイは使用しない */
 
@@ -747,6 +699,55 @@
             font-style: italic;
             grid-column: 1 / -1;
         }
+
+        /* テクスチャウィンドウ専用スタイル */
+        .texture-grid {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+            background: #3a3a3a;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .texture-item {
+            background: #4a4a4a;
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .texture-item:hover {
+            background: #5a5a5a;
+            border-color: #e67e3c;
+        }
+
+        .texture-item.selected {
+            border-color: #e67e3c;
+            background: #5a5a5a;
+        }
+
+        .texture-preview {
+            width: 100%;
+            height: 60px;
+            border-radius: 4px;
+            background-size: cover;
+            background-position: center;
+            border: 1px solid #666;
+        }
+
+        .texture-item-name {
+            color: white;
+            font-size: 11px;
+            margin-top: 6px;
+            text-align: center;
+            line-height: 1.2;
+        }
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -760,6 +761,9 @@
         </button>
         <button class="chevron-button" id="open-frame-btn" title="フレーム選択">
             <span class="icon">eyeglasses</span>
+        </button>
+        <button class="chevron-button" id="texture-btn" title="テクスチャ選択">
+            <span class="icon">texture</span>
         </button>
         <button class="chevron-button" id="color-window-btn" title="カラー設定">
             <span class="icon">palette</span>
@@ -826,9 +830,6 @@
             </button>
             <button class="tab-button" id="tab-btn-white">
                 <span class="icon">circle</span>
-            </button>
-            <button class="tab-button" id="tab-btn-pattern">
-                <span class="icon">settings</span>
             </button>
         </div>
 
@@ -908,39 +909,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- パターン設定タブ -->
-            <div class="tab-content" id="tab-pattern">
-                <div class="pattern-options">
-                    <div class="pattern-option active" data-pattern="solid">
-                        <div style="font-size: 16px; font-weight: bold;">単色</div>
-                    </div>
-                    <div class="pattern-option" data-pattern="spot">
-                        <div style="font-size: 16px; font-weight: bold;">斑点</div>
-                    </div>
-                    <div class="pattern-option" data-pattern="spot-inv">
-                        <div style="font-size: 16px; font-weight: bold;">反転斑点</div>
-                    </div>
-                    <div class="pattern-option" data-pattern="stripe">
-                        <div style="font-size: 16px; font-weight: bold;">縞模様</div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 16px;">
-                    <label class="pattern-label">ランダムシード</label>
-                    <input type="number" class="pattern-input" id="seed" value="42" placeholder="42">
-                </div>
-
-                <div style="margin-top: 16px;">
-                    <label class="pattern-label">斑点サイズ（最小-最大）</label>
-                    <input type="text" class="pattern-input" id="spot-size" value="4-15" placeholder="4-15">
-                </div>
-
-                <div style="margin-top: 16px;">
-                    <label class="pattern-label">縞模様の角度（度）</label>
-                    <input type="number" class="pattern-input" id="stripe-angle" value="95" placeholder="95">
-                </div>
-            </div>
         </div>
     </div>
 
@@ -981,7 +949,7 @@
                     <div style="font-weight: bold; margin-bottom: 8px; color: #ccc; border-bottom: 1px solid #555; padding-bottom: 4px;">フレーム情報</div>
                     <div style="padding-left: 12px;">
                         • ファイル: <span id="frame-file-name-window">未選択</span><br>
-                        • 実寸 (mm): <input type="number" id="frame-real-size-window" class="pattern-input" value="160" placeholder="160" style="width: 80px; padding: 4px 8px; margin-left: 4px;">
+                        • 実寸 (mm): <input type="number" id="frame-real-size-window" value="160" placeholder="160" style="width: 80px; padding: 4px 8px; margin-left: 4px; background: #2a2a2a; border: 1px solid #555; border-radius: 4px; color: white;">
                     </div>
                 </div>
 
@@ -1009,6 +977,30 @@
                         測定点なし
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- テクスチャ選択ウィンドウ -->
+    <div id="texture-window" class="floating-window">
+        <div class="window-header">
+            <div class="window-drag-bar">
+                <div class="window-title">
+                    <span class="icon">texture</span>
+                    テクスチャ選択
+                </div>
+                <button class="window-close-btn" onclick="app.toggleTextureWindow()">
+                    <span class="icon">close</span>
+                </button>
+            </div>
+        </div>
+        <div class="window-body">
+            <div class="texture-grid" id="texture-grid">
+                <div class="texture-item" onclick="app.selectTexture('none')">
+                    <div class="texture-preview" style="background: #f0f0f0; color: #999; display: flex; align-items: center; justify-content: center;">カラー</div>
+                    <div class="texture-item-name">カラー設定を使用</div>
+                </div>
+                <div class="loading">テクスチャ一覧を読み込み中...</div>
             </div>
         </div>
     </div>
@@ -1104,10 +1096,6 @@
                 this.saturation = 100;
                 this.brightness = 0;
                 this.opacity = 100; // 黒部分の透明度（初期値100 = 不透明）
-                this.pattern = 'solid';
-                this.seed = 42;
-                this.spotSize = '4-15';
-                this.stripeAngle = 95;
                 
                 // サブカラー設定（白部分用）
                 this.subHue = 0;
@@ -1132,8 +1120,16 @@
                     zp: []
                 };
                 
+                // テクスチャ関連
+                this.availableTextures = [];
+                this.currentTexture = null;
+                this.currentTextureName = 'none';
+                
                 // ウィンドウ位置保存
                 this.windowPositions = {};
+                
+                // 初期化フラグ
+                this.initialized = false;
                 
                 // 設定を読み込み
                 this.loadSettings();
@@ -1173,10 +1169,6 @@
                         if (data.saturation !== undefined) this.saturation = data.saturation;
                         if (data.brightness !== undefined) this.brightness = data.brightness;
                         if (data.opacity !== undefined) this.opacity = data.opacity;
-                        if (data.pattern) this.pattern = data.pattern;
-                        if (data.seed !== undefined) this.seed = data.seed;
-                        if (data.spotSize) this.spotSize = data.spotSize;
-                        if (data.stripeAngle !== undefined) this.stripeAngle = data.stripeAngle;
                         
                         // サブカラー設定
                         if (data.subHue !== undefined) this.subHue = data.subHue;
@@ -1187,11 +1179,20 @@
                         // ウィンドウ位置
                         if (data.windowPositions) this.windowPositions = data.windowPositions;
                         
-                        // UIに反映
-                        setTimeout(() => {
+                        // テクスチャ設定
+                        if (data.currentTextureName) this.currentTextureName = data.currentTextureName;
+                        
+                        // UIに反映（アプリ初期化時のみ）
+                        if (!this.initialized) {
+                            setTimeout(() => {
+                                this.applySettingsToUI();
+                                this.restoreWindowPositions();
+                                this.initialized = true;
+                            }, 100);
+                        } else {
+                            // 初期化済みの場合はUIのみ更新
                             this.applySettingsToUI();
-                            this.restoreWindowPositions();
-                        }, 100);
+                        }
                     }
                 } catch (e) {
                     console.error('設定の読み込みに失敗:', e);
@@ -1211,15 +1212,12 @@
                         saturation: this.saturation,
                         brightness: this.brightness,
                         opacity: this.opacity,
-                        pattern: this.pattern,
-                        seed: this.seed,
-                        spotSize: this.spotSize,
-                        stripeAngle: this.stripeAngle,
                         subHue: this.subHue,
                         subSaturation: this.subSaturation,
                         subBrightness: this.subBrightness,
                         subOpacity: this.subOpacity,
-                        windowPositions: this.windowPositions
+                        windowPositions: this.windowPositions,
+                        currentTextureName: this.currentTextureName
                     };
                     
                     localStorage.setItem('faceMeasurementSettings', JSON.stringify(settings));
@@ -1229,16 +1227,6 @@
             }
 
             applySettingsToUI() {
-                // パターン設定
-                const seedEl = document.getElementById('seed');
-                if (seedEl) seedEl.value = this.seed;
-                
-                const spotSizeEl = document.getElementById('spot-size');
-                if (spotSizeEl) spotSizeEl.value = this.spotSize;
-                
-                const stripeAngleEl = document.getElementById('stripe-angle');
-                if (stripeAngleEl) stripeAngleEl.value = this.stripeAngle;
-                
                 // PD値
                 const topRealSizeEl = document.getElementById('top-real-size');
                 if (topRealSizeEl) topRealSizeEl.value = this.baseRealSize;
@@ -1275,6 +1263,11 @@
                 if (openFrameBtn) openFrameBtn.addEventListener('click', () => {
                     this.setAdjustMode();
                     this.openFrameSelector();
+                });
+                
+                const textureBtn = document.getElementById('texture-btn');
+                if (textureBtn) textureBtn.addEventListener('click', () => {
+                    this.toggleTextureWindow();
                 });
                 
                 const colorWindowBtn = document.getElementById('color-window-btn');
@@ -1335,11 +1328,9 @@
                 // カラーウィンドウのタブ切り替え
                 const tabBtnBlack = document.getElementById('tab-btn-black');
                 const tabBtnWhite = document.getElementById('tab-btn-white');
-                const tabBtnPattern = document.getElementById('tab-btn-pattern');
                 
                 if (tabBtnBlack) tabBtnBlack.addEventListener('click', () => this.switchColorTab('black'));
                 if (tabBtnWhite) tabBtnWhite.addEventListener('click', () => this.switchColorTab('white'));
-                if (tabBtnPattern) tabBtnPattern.addEventListener('click', () => this.switchColorTab('pattern'));
                 
                 // カラーウィンドウ閉じる
                 const colorWindowClose = document.getElementById('color-window-close');
@@ -1354,43 +1345,6 @@
                 
                 // カラーピッカーのイベント（白部分）
                 this.setupColorPicker('white');
-                
-                // パターン選択
-                const patternOptions = document.querySelectorAll('.pattern-option');
-                patternOptions.forEach(option => {
-                    option.addEventListener('click', () => {
-                        const pattern = option.getAttribute('data-pattern');
-                        this.pattern = pattern;
-                        patternOptions.forEach(opt => opt.classList.remove('active'));
-                        option.classList.add('active');
-                        this.applyColorChange();
-                    });
-                });
-                
-                // パターン設定の変更
-                const seedInput = document.getElementById('seed');
-                if (seedInput) {
-                    seedInput.addEventListener('change', () => {
-                        this.seed = parseInt(seedInput.value) || 42;
-                        this.applyColorChange();
-                    });
-                }
-                
-                const spotSizeInput = document.getElementById('spot-size');
-                if (spotSizeInput) {
-                    spotSizeInput.addEventListener('change', () => {
-                        this.spotSize = spotSizeInput.value;
-                        this.applyColorChange();
-                    });
-                }
-                
-                const stripeAngleInput = document.getElementById('stripe-angle');
-                if (stripeAngleInput) {
-                    stripeAngleInput.addEventListener('change', () => {
-                        this.stripeAngle = parseFloat(stripeAngleInput.value) || 95;
-                        this.applyColorChange();
-                    });
-                }
                 
                 // キーボードイベント（リセット機能）
                 document.addEventListener('keydown', (e) => {
@@ -1710,17 +1664,6 @@
                     this.updateRGBDisplay('white');
                     this.updateColorPickerBackground('white');
                 }
-                
-                // パターンの選択状態を更新
-                const patternOptions = document.querySelectorAll('.pattern-option');
-                patternOptions.forEach((opt, index) => {
-                    opt.classList.remove('active');
-                });
-                const patterns = ['solid', 'spot', 'spot-inv', 'stripe'];
-                const activeIndex = patterns.indexOf(this.pattern);
-                if (activeIndex >= 0) {
-                    patternOptions[activeIndex].classList.add('active');
-                }
             }
 
             updateRGBDisplay(colorType) {
@@ -1762,7 +1705,7 @@
                 this.currentColorTab = tab;
                 
                 // タブボタンの状態を更新
-                const tabs = ['black', 'white', 'pattern'];
+                const tabs = ['black', 'white'];
                 tabs.forEach(t => {
                     const btn = document.getElementById('tab-btn-' + t);
                     const content = document.getElementById('tab-' + t);
@@ -1995,8 +1938,14 @@
                             width: img.width,
                             height: img.height
                         };
-                        // フレーム読み込み後、即座にカラーを適用してリサイズ
-                        this.applyColorAndResize();
+                        // フレーム読み込み後、現在のテクスチャ状態に応じて処理
+                        if (this.currentTexture === null) {
+                            // テクスチャなし - カラー設定を適用
+                            this.applyColorAndResize();
+                        } else {
+                            // テクスチャあり - テクスチャ処理を適用
+                            this.applyTextureAndResize();
+                        }
                         // 即座に再描画
                         this.redraw();
                         this.updateStatusBar();
@@ -2071,9 +2020,6 @@
                 const width = imageData.width;
                 const height = imageData.height;
                 
-                // パターンマスク生成
-                const mask = this.createPatternMask(width, height);
-                
                 // メインカラー（黒部分用）HSBからRGBへ変換
                 const mainRgb = this.hsvToRgb(this.hue / 360, this.saturation / 100, this.brightness / 100);
                 const mainR = Math.round(mainRgb.r * 255);
@@ -2093,38 +2039,10 @@
                     
                     // 黒っぽい部分（メインカラー）
                     if (sum < 60) {
-                        const pixelIndex = Math.floor(i / 4);
-                        const y = Math.floor(pixelIndex / width);
-                        const x = pixelIndex % width;
-                        
-                        if (this.pattern === 'solid') {
-                            data[i] = mainR;
-                            data[i + 1] = mainG;
-                            data[i + 2] = mainB;
-                            data[i + 3] = Math.round(data[i + 3] * mainAlpha);
-                        } else if (this.pattern === 'stripe') {
-                            if (mask[y * width + x]) {
-                                data[i] = mainR;
-                                data[i + 1] = mainG;
-                                data[i + 2] = mainB;
-                            } else {
-                                data[i] = Math.round(mainR * 0.6);
-                                data[i + 1] = Math.round(mainG * 0.6);
-                                data[i + 2] = Math.round(mainB * 0.6);
-                            }
-                            data[i + 3] = Math.round(data[i + 3] * mainAlpha);
-                        } else {
-                            if (mask[y * width + x]) {
-                                data[i] = mainR;
-                                data[i + 1] = mainG;
-                                data[i + 2] = mainB;
-                            } else {
-                                data[i] = Math.round(mainR * 0.3);
-                                data[i + 1] = Math.round(mainG * 0.3);
-                                data[i + 2] = Math.round(mainB * 0.3);
-                            }
-                            data[i + 3] = Math.round(data[i + 3] * mainAlpha);
-                        }
+                        data[i] = mainR;
+                        data[i + 1] = mainG;
+                        data[i + 2] = mainB;
+                        data[i + 3] = Math.round(data[i + 3] * mainAlpha);
                     }
                     // 白っぽい部分（サブカラー）
                     else if (sum > 700) { // 白判定の閾値（RGB合計が700以上）
@@ -2134,75 +2052,6 @@
                         data[i + 3] = Math.round(255 * subAlpha); // 透過率を適用
                     }
                 }
-            }
-
-            createPatternMask(width, height) {
-                const mask = new Array(width * height).fill(false);
-                
-                if (this.pattern === 'solid') {
-                    mask.fill(true);
-                } else if (this.pattern === 'spot' || this.pattern === 'spot-inv') {
-                    const seededRandom = this.seededRandom(this.seed);
-                    const [minSize, maxSize] = this.parseSpotSize();
-                    const numSpots = Math.floor((width * height) / 800);
-                    
-                    for (let i = 0; i < numSpots; i++) {
-                        const cx = Math.floor(seededRandom() * width);
-                        const cy = Math.floor(seededRandom() * height);
-                        const radius = minSize + Math.floor(seededRandom() * (maxSize - minSize + 1));
-                        
-                        for (let y = 0; y < height; y++) {
-                            for (let x = 0; x < width; x++) {
-                                const dx = (x - cx) / radius;
-                                const dy = (y - cy) / (radius * 0.7);
-                                if (dx * dx + dy * dy <= 1) {
-                                    mask[y * width + x] = true;
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (this.pattern === 'spot-inv') {
-                        for (let i = 0; i < mask.length; i++) {
-                            mask[i] = !mask[i];
-                        }
-                    }
-                } else if (this.pattern === 'stripe') {
-                    const angleRad = (this.stripeAngle * Math.PI) / 180;
-                    const stripeWidth = 10;
-                    
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            const rotatedDist = x * Math.cos(angleRad) - y * Math.sin(angleRad);
-                            if (Math.floor(rotatedDist / stripeWidth) % 2 === 0) {
-                                mask[y * width + x] = true;
-                            }
-                        }
-                    }
-                }
-                
-                return mask;
-            }
-
-            parseSpotSize() {
-                try {
-                    if (this.spotSize.includes('-')) {
-                        const parts = this.spotSize.split('-');
-                        return [parseInt(parts[0]), parseInt(parts[1])];
-                    }
-                    const size = parseInt(this.spotSize);
-                    return [size, size];
-                } catch {
-                    return [4, 15];
-                }
-            }
-
-            seededRandom(seed) {
-                let value = seed;
-                return function() {
-                    value = (value * 9301 + 49297) % 233280;
-                    return value / 233280;
-                };
             }
 
             hsvToRgb(h, s, v) {
@@ -2227,7 +2076,14 @@
 
             applyColorChange() {
                 if (this.frameImage) {
-                    this.applyColorAndResize();
+                    // 現在のテクスチャ状態に応じて適切な処理を選択
+                    if (this.currentTexture === null) {
+                        // テクスチャなし - カラー設定を適用
+                        this.applyColorAndResize();
+                    } else {
+                        // テクスチャあり - テクスチャ処理を適用（白部分のみカラー更新）
+                        this.applyTextureAndResize();
+                    }
                     setTimeout(() => this.redraw(), 50);
                 }
                 // 情報ウィンドウが開いている場合は更新
@@ -2239,7 +2095,14 @@
 
             updateFrameSize() {
                 if (this.originalFrameImage) {
-                    this.applyColorAndResize();
+                    // 現在のテクスチャ状態に応じて適切な処理を選択
+                    if (this.currentTexture === null) {
+                        // テクスチャなし - カラー設定を適用
+                        this.applyColorAndResize();
+                    } else {
+                        // テクスチャあり - テクスチャ処理を適用
+                        this.applyTextureAndResize();
+                    }
                     this.redraw();
                 }
                 this.updateInfoWindowContent();
@@ -2609,8 +2472,21 @@
                     return;
                 }
                 
+                // 現在の日時から月日時分を取得
+                const now = new Date();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                
+                // フレーム名から拡張子を除去
+                const frameName = this.frameImageName ? this.frameImageName.replace(/\.[^/.]+$/, '') : 'noframe';
+                
+                // ファイル名: 月日時分_フレーム名
+                const fileName = `${month}${day}${hours}${minutes}_${frameName}.png`;
+                
                 const link = document.createElement('a');
-                link.download = 'face_measurement_' + Date.now() + '.png';
+                link.download = fileName;
                 link.href = this.canvas.toDataURL();
                 link.click();
             }
@@ -2787,7 +2663,14 @@
                             width: img.width,
                             height: img.height
                         };
-                        this.applyColorAndResize();
+                        // 現在のテクスチャ状態に応じて処理
+                        if (this.currentTexture === null) {
+                            // テクスチャなし - カラー設定を適用
+                            this.applyColorAndResize();
+                        } else {
+                            // テクスチャあり - テクスチャ処理を適用
+                            this.applyTextureAndResize();
+                        }
                         this.redraw();
                         this.updateStatusBar();
                         this.updateInfoWindowContent();
@@ -2803,6 +2686,369 @@
                     img.src = `./frames/${filename}`;
                 } catch (error) {
                     console.error('フレーム選択エラー:', error);
+                }
+            }
+
+            // テクスチャ選択関連の機能
+            toggleTextureWindow() {
+                this.textureWindowVisible = !this.textureWindowVisible;
+                const window = document.getElementById('texture-window');
+                
+                if (this.textureWindowVisible) {
+                    window.classList.add('show');
+                    if (this.availableTextures.length === 0) {
+                        this.loadTextureList().then(() => {
+                            this.renderTextureGrid();
+                        });
+                    } else {
+                        this.renderTextureGrid();
+                    }
+                } else {
+                    window.classList.remove('show');
+                }
+            }
+
+            async loadTextureList() {
+                try {
+                    const response = await fetch('./textures/texture-list.json');
+                    if (!response.ok) {
+                        console.log('texture-list.jsonが見つかりません。デフォルトテクスチャを使用します。');
+                        this.availableTextures = this.getDefaultTextures();
+                        return;
+                    }
+                    const data = await response.json();
+                    
+                    // ファイル名のみの配列に対応
+                    if (Array.isArray(data)) {
+                        // シンプルな配列形式 ["file1.png", "file2.png"]
+                        this.availableTextures = data.map(filename => ({
+                            name: this.filenameToDisplayName(filename),
+                            type: 'image',
+                            file: filename
+                        }));
+                    } else if (data.textures && Array.isArray(data.textures)) {
+                        // オブジェクト形式との互換性 {"textures": ["file1.png", "file2.png"]}
+                        const textureArray = data.textures;
+                        this.availableTextures = textureArray.map(item => {
+                            if (typeof item === 'string') {
+                                // ファイル名のみの場合
+                                return {
+                                    name: this.filenameToDisplayName(item),
+                                    type: 'image',
+                                    file: item
+                                };
+                            } else {
+                                // オブジェクト形式の場合（従来互換）
+                                return item;
+                            }
+                        });
+                    } else {
+                        // 予期しない形式
+                        console.log('texture-list.jsonの形式が不正です。デフォルトテクスチャを使用します。');
+                        this.availableTextures = this.getDefaultTextures();
+                        return;
+                    }
+                    
+                    console.log(`${this.availableTextures.length}個のテクスチャを読み込みました`);
+                } catch (error) {
+                    console.log('外部テクスチャの読み込みに失敗。デフォルトテクスチャを使用します:', error);
+                    this.availableTextures = this.getDefaultTextures();
+                }
+            }
+
+            filenameToDisplayName(filename) {
+                // ファイル名から表示名を生成
+                return filename
+                    .replace(/\.[^/.]+$/, '')  // 拡張子を削除
+                    .replace(/_/g, ' ')        // アンダースコアをスペースに
+                    .replace(/\b\w/g, l => l.toUpperCase()); // 各単語の最初を大文字に
+            }
+
+            getDefaultTextures() {
+                // デフォルトテクスチャなし（外部ファイルのみ）
+                return [];
+            }
+
+            renderTextureGrid() {
+                const grid = document.getElementById('texture-grid');
+                if (!grid) return;
+
+                // 「なし」オプションを保持
+                const noneOption = grid.querySelector('.texture-item');
+                grid.innerHTML = '';
+                grid.appendChild(noneOption);
+                
+                // 現在の選択を更新
+                const textureItems = grid.querySelectorAll('.texture-item');
+                textureItems.forEach(item => item.classList.remove('selected'));
+                if (this.currentTextureName === 'none') {
+                    noneOption.classList.add('selected');
+                }
+
+                if (this.availableTextures.length === 0) {
+                    // テクスチャがない場合のメッセージ
+                    const noTextureMsg = document.createElement('div');
+                    noTextureMsg.className = 'loading';
+                    noTextureMsg.textContent = 'テクスチャファイルが見つかりません。./textures/フォルダにテクスチャ画像とtexture-list.jsonを配置してください。';
+                    grid.appendChild(noTextureMsg);
+                } else {
+                    this.availableTextures.forEach(texture => {
+                        const textureItem = this.createTextureItem(texture);
+                        grid.appendChild(textureItem);
+                    });
+                }
+            }
+
+            createTextureItem(texture) {
+                const item = document.createElement('div');
+                item.className = 'texture-item';
+                if (this.currentTextureName === texture.name) {
+                    item.classList.add('selected');
+                }
+
+                const preview = document.createElement('div');
+                preview.className = 'texture-preview';
+
+                if (texture.type === 'pattern') {
+                    const patternStyle = this.getPatternStyle(texture.pattern);
+                    preview.style.background = patternStyle;
+                } else if (texture.type === 'color') {
+                    preview.style.background = texture.color;
+                } else if (texture.type === 'image' && texture.file) {
+                    preview.style.backgroundImage = `url(./textures/${texture.file})`;
+                }
+
+                const name = document.createElement('div');
+                name.className = 'texture-item-name';
+                name.textContent = texture.name;
+
+                item.appendChild(preview);
+                item.appendChild(name);
+
+                item.addEventListener('click', () => this.selectTexture(texture.name, texture));
+
+                return item;
+            }
+
+            getPatternStyle(pattern) {
+                switch (pattern) {
+                    case 'wood1':
+                        return 'linear-gradient(45deg, #8B4513 25%, #A0522D 25%, #A0522D 50%, #8B4513 50%, #8B4513 75%, #A0522D 75%), linear-gradient(-45deg, #654321 25%, #8B4513 25%, #8B4513 50%, #654321 50%, #654321 75%, #8B4513 75%)';
+                    case 'wood2':
+                        return 'linear-gradient(90deg, #DEB887 0%, #CD853F 30%, #8B7355 60%, #DEB887 100%)';
+                    case 'metal':
+                        return 'linear-gradient(45deg, #C0C0C0 25%, #A8A8A8 25%, #A8A8A8 50%, #C0C0C0 50%, #C0C0C0 75%, #A8A8A8 75%), linear-gradient(-45deg, #E5E5E5 25%, #C0C0C0 25%, #C0C0C0 50%, #E5E5E5 50%, #E5E5E5 75%, #C0C0C0 75%)';
+                    case 'leather':
+                        return 'radial-gradient(circle at 20% 20%, #8B4513 0%, #654321 40%, #8B4513 100%)';
+                    default:
+                        return '#cccccc';
+                }
+            }
+
+            async selectTexture(textureName, textureData = null) {
+                try {
+                    this.currentTextureName = textureName;
+                    
+                    if (textureName === 'none') {
+                        this.currentTexture = null;
+                        // 即座に反映
+                        this.applyTextureToFrame();
+                        this.renderTextureGrid();
+                        this.saveSettings();
+                    } else if (textureData) {
+                        if (textureData.type === 'image' && textureData.file) {
+                            // 外部画像ファイルを読み込み（605×227固定サイズ）
+                            const img = new Image();
+                            img.onload = () => {
+                                // 画像が605×227でない場合は警告
+                                if (img.width !== 605 || img.height !== 227) {
+                                    console.warn(`テクスチャ画像 ${textureData.file} のサイズが ${img.width}×${img.height} です。推奨サイズは605×227です。`);
+                                }
+                                this.currentTexture = img;
+                                // 即座に反映
+                                this.applyTextureToFrame();
+                                this.renderTextureGrid();
+                                this.saveSettings();
+                            };
+                            img.onerror = () => {
+                                console.error('テクスチャ画像の読み込みに失敗:', textureData.file);
+                            };
+                            img.src = `./textures/${textureData.file}`;
+                            return; // 非同期処理のためここで返る
+                        } else {
+                            // パターンまたは色
+                            this.currentTexture = textureData;
+                            // 即座に反映
+                            this.applyTextureToFrame();
+                            this.renderTextureGrid();
+                            this.saveSettings();
+                        }
+                    }
+                } catch (error) {
+                    console.error('テクスチャ選択エラー:', error);
+                }
+            }
+
+            applyTextureToFrame() {
+                if (!this.originalFrameImage) return;
+
+                if (this.currentTexture === null) {
+                    // テクスチャなし - 既存のカラー設定を使用
+                    this.applyColorAndResize();
+                } else {
+                    // テクスチャありの場合
+                    this.applyTextureAndResize();
+                }
+                
+                this.redraw();
+                this.updateStatusBar();
+                this.updateInfoWindowContent();
+            }
+
+            applyTextureAndResize() {
+                if (!this.originalFrameImage) return;
+
+                // キャンバス作成（元画像と同サイズ）
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = this.originalFrameImage.width;
+                canvas.height = this.originalFrameImage.height;
+
+                // 元画像を描画
+                ctx.drawImage(this.originalFrameImage, 0, 0);
+
+                // 画像データを取得
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+
+                // 白色用のカラー設定を計算（既存のサブカラー設定を使用）
+                const subRgb = this.hsvToRgb(this.subHue / 360, this.subSaturation / 100, this.subBrightness / 100);
+                const subR = Math.round(subRgb.r * 255);
+                const subG = Math.round(subRgb.g * 255);
+                const subB = Math.round(subRgb.b * 255);
+                const subAlpha = this.subOpacity / 100;
+
+                // テクスチャが画像の場合の前処理
+                let textureImageData = null;
+                if (this.currentTexture instanceof Image) {
+                    // テクスチャ画像データを事前に取得（605×227固定）
+                    const texCanvas = document.createElement('canvas');
+                    const texCtx = texCanvas.getContext('2d');
+                    texCanvas.width = 605;
+                    texCanvas.height = 227;
+                    texCtx.drawImage(this.currentTexture, 0, 0, 605, 227);
+                    textureImageData = texCtx.getImageData(0, 0, 605, 227);
+                }
+
+                // ピクセル処理（最適化版）
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    const a = data[i + 3];
+                    const sum = r + g + b;
+                    
+                    // 透明部分はスキップ
+                    if (a === 0) continue;
+                    
+                    // 黒っぽい部分（閾値以下）を判定
+                    if (sum < 60) {
+                        // 黒部分 - テクスチャを適用
+                        if (this.currentTexture.type === 'color') {
+                            // 単色の場合（最速）
+                            const color = this.hexToRgb(this.currentTexture.color);
+                            data[i] = color.r;
+                            data[i + 1] = color.g;
+                            data[i + 2] = color.b;
+                        } else if (this.currentTexture.type === 'pattern') {
+                            // パターンの場合
+                            const pixelIndex = Math.floor(i / 4);
+                            const x = pixelIndex % canvas.width;
+                            const y = Math.floor(pixelIndex / canvas.width);
+                            const patternColor = this.getPatternColor(this.currentTexture.pattern, x, y);
+                            data[i] = patternColor.r;
+                            data[i + 1] = patternColor.g;
+                            data[i + 2] = patternColor.b;
+                        } else if (textureImageData) {
+                            // 画像テクスチャの場合（605×227固定、比率維持）
+                            const pixelIndex = Math.floor(i / 4);
+                            const x = pixelIndex % canvas.width;
+                            const y = Math.floor(pixelIndex / canvas.width);
+                            
+                            // フレーム画像の座標をテクスチャ座標に変換（同じ比率なので直接マッピング）
+                            const texX = Math.floor(x);
+                            const texY = Math.floor(y);
+                            
+                            // テクスチャ画像内の座標に収める
+                            const clampedTexX = Math.max(0, Math.min(604, texX));
+                            const clampedTexY = Math.max(0, Math.min(226, texY));
+                            
+                            // テクスチャピクセルを取得
+                            const texIndex = (clampedTexY * 605 + clampedTexX) * 4;
+                            data[i] = textureImageData.data[texIndex];
+                            data[i + 1] = textureImageData.data[texIndex + 1];
+                            data[i + 2] = textureImageData.data[texIndex + 2];
+                        }
+                    } 
+                    // 白っぽい部分（カラー設定のサブカラーを適用）
+                    else if (sum > 700) {
+                        data[i] = subR;
+                        data[i + 1] = subG;
+                        data[i + 2] = subB;
+                        data[i + 3] = Math.round(255 * subAlpha);
+                    }
+                }
+
+                // 変更された画像データを適用
+                ctx.putImageData(imageData, 0, 0);
+                
+                // 新しい画像として設定
+                const newImg = new Image();
+                newImg.onload = () => {
+                    this.frameImage = newImg;
+                    this.frameImageData = imageData;
+                    
+                    // サイズ調整
+                    if (this.scaleRatio > 0) {
+                        const targetWidth = this.frameRealSize * this.scaleRatio;
+                        this.frameSize.width = targetWidth;
+                        this.frameSize.height = (this.originalFrameSize.height / this.originalFrameSize.width) * targetWidth;
+                    } else {
+                        this.frameSize.width = this.originalFrameSize.width;
+                        this.frameSize.height = this.originalFrameSize.height;
+                    }
+                    
+                    // 即座に再描画
+                    this.redraw();
+                };
+                newImg.src = canvas.toDataURL();
+            }
+
+            hexToRgb(hex) {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            }
+
+            getPatternColor(pattern, x, y) {
+                switch (pattern) {
+                    case 'wood1':
+                        const wave = Math.sin(y * 0.1) * 20;
+                        return (x + wave) % 40 < 20 ? {r: 139, g: 69, b: 19} : {r: 160, g: 82, b: 45};
+                    case 'wood2':
+                        const grain = Math.sin(y * 0.05) * 30;
+                        return (x + grain) % 60 < 30 ? {r: 222, g: 184, b: 135} : {r: 205, g: 133, b: 63};
+                    case 'metal':
+                        return (x + y) % 4 < 2 ? {r: 192, g: 192, b: 192} : {r: 169, g: 169, b: 169};
+                    case 'leather':
+                        const noise = (Math.sin(x * 0.3) + Math.cos(y * 0.3)) * 20;
+                        return {r: 139 + noise, g: 69 + noise/2, b: 19 + noise/4};
+                    default:
+                        return {r: 128, g: 128, b: 128};
                 }
             }
 
@@ -2896,10 +3142,6 @@
                 this.saturation = 100;
                 this.brightness = 0;
                 this.opacity = 100;
-                this.pattern = 'solid';
-                this.seed = 42;
-                this.spotSize = '4-15';
-                this.stripeAngle = 95;
                 this.subHue = 0;
                 this.subSaturation = 0;
                 this.subBrightness = 0;
@@ -2908,9 +3150,14 @@
                 // ウィンドウ位置をクリア
                 this.windowPositions = {};
                 
+                // テクスチャをリセット
+                this.currentTexture = null;
+                this.currentTextureName = 'none';
+                
                 // UI状態をリセット
                 this.colorWindowVisible = false;
                 this.infoWindowVisible = false;
+                this.textureWindowVisible = false;
                 this.currentColorTab = 'black';
                 this.mode = 'measure';
                 
@@ -2920,6 +3167,9 @@
                 
                 const infoWindow = document.getElementById('info-window');
                 if (infoWindow) infoWindow.classList.remove('show');
+                
+                const textureWindow = document.getElementById('texture-window');
+                if (textureWindow) textureWindow.classList.remove('show');
                 
                 const frameModal = document.getElementById('frame-selector-modal');
                 if (frameModal) frameModal.style.display = 'none';
@@ -3023,6 +3273,7 @@
             // ウィンドウをドラッグ可能にする
             makeDraggable(document.getElementById('color-window'));
             makeDraggable(document.getElementById('info-window'));
+            makeDraggable(document.getElementById('texture-window'));
             
             // 拡大鏡をドラッグ可能にする
             makeDraggableMagnifier(document.getElementById('magnifier'));
