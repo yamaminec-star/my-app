@@ -768,7 +768,7 @@
         <button class="chevron-button" id="color-window-btn" title="カラー設定">
             <span class="icon">palette</span>
         </button>
-        <button class="chevron-button" id="reload-frame-btn" title="フレーム更新">
+        <button class="chevron-button" id="reload-frame-btn" title="フレーム・テクスチャデータ更新">
             <span class="icon">refresh</span>
         </button>
         <button class="menu-toggle" id="info-window-btn" title="情報パネル">
@@ -989,10 +989,10 @@
                     <span class="icon">texture</span>
                     テクスチャ選択
                 </div>
-                <button class="window-close-btn" onclick="app.toggleTextureWindow()">
-                    <span class="icon">close</span>
-                </button>
             </div>
+            <button class="close-btn" id="texture-window-close">
+                <span class="icon">close</span>
+            </button>
         </div>
         <div class="window-body">
             <div class="texture-grid" id="texture-grid">
@@ -1021,11 +1021,11 @@
                         <div class="filter-checkboxes" id="series-filters"></div>
                     </div>
                     <div class="filter-group">
-                        <label>PD (55-70mm):</label>
+                        <label>PD:</label>
                         <div class="filter-checkboxes" id="pd-filters"></div>
                     </div>
                     <div class="filter-group">
-                        <label>ZP (140-160mm):</label>
+                        <label>ZP:</label>
                         <div class="filter-checkboxes" id="zp-filters"></div>
                     </div>
                     <button onclick="app.updateFrameFilters()">フィルター適用</button>
@@ -1339,6 +1339,10 @@
                 // 情報ウィンドウ閉じる
                 const infoWindowClose = document.getElementById('info-window-close');
                 if (infoWindowClose) infoWindowClose.addEventListener('click', () => this.toggleInfoWindow());
+                
+                // テクスチャウィンドウ閉じる
+                const textureWindowClose = document.getElementById('texture-window-close');
+                if (textureWindowClose) textureWindowClose.addEventListener('click', () => this.toggleTextureWindow());
                 
                 // カラーピッカーのイベント（黒部分）
                 this.setupColorPicker('black');
@@ -1958,11 +1962,35 @@
                 reader.readAsDataURL(file);
             }
 
-            reloadFrame() {
-                if (this.originalFrameImage) {
-                    this.applyColorAndResize();
-                    this.redraw();
-                    this.updateStatusBar();
+            async reloadFrame() {
+                // ステータスバーで更新開始を通知
+                this.updateStatusBar('フレーム・テクスチャデータを更新中...');
+                
+                try {
+                    // フレームJSONを強制更新
+                    await this.forceReloadFrameList();
+                    
+                    // テクスチャJSONを強制更新
+                    await this.forceReloadTextureList();
+                    
+                    // フレーム画像も再適用
+                    if (this.originalFrameImage) {
+                        // 現在のテクスチャ状態に応じて処理
+                        if (this.currentTexture === null) {
+                            this.applyColorAndResize();
+                        } else {
+                            this.applyTextureAndResize();
+                        }
+                        this.redraw();
+                        this.updateStatusBar();
+                    }
+                    
+                    console.log('フレーム・テクスチャデータの更新が完了しました');
+                    this.updateStatusBar('フレーム・テクスチャデータ更新完了');
+                    
+                } catch (error) {
+                    console.error('データ更新エラー:', error);
+                    this.updateStatusBar('データ更新に失敗しました');
                 }
             }
 
@@ -2441,9 +2469,15 @@
                 }
             }
 
-            updateStatusBar() {
+            updateStatusBar(customMessage = null) {
                 const statusBar = document.getElementById('status-bar');
                 if (!statusBar) return;
+                
+                // カスタムメッセージが指定された場合はそれを表示
+                if (customMessage) {
+                    statusBar.textContent = customMessage;
+                    return;
+                }
                 
                 let status = '';
                 
@@ -2507,6 +2541,70 @@
             closeFrameSelector() {
                 const modal = document.getElementById('frame-selector-modal');
                 modal.style.display = 'none';
+            }
+
+            async forceReloadFrameList() {
+                try {
+                    // キャッシュを回避するためタイムスタンプを追加
+                    const timestamp = Date.now();
+                    const response = await fetch(`./frames/frame-list.json?t=${timestamp}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    
+                    // データを強制更新
+                    this.availableFrames = data.frames || data;
+                    console.log(`フレームリスト更新: ${this.availableFrames.length}個のフレームを読み込みました`);
+                    
+                    // フィルターもリセット
+                    this.filteredFrames = [...this.availableFrames];
+                    
+                } catch (error) {
+                    console.error('フレームリストの更新に失敗:', error);
+                    throw error;
+                }
+            }
+
+            async forceReloadTextureList() {
+                try {
+                    // キャッシュを回避するためタイムスタンプを追加
+                    const timestamp = Date.now();
+                    const response = await fetch(`./textures/texture-list.json?t=${timestamp}`);
+                    if (!response.ok) {
+                        console.log('texture-list.json が見つかりません（正常）');
+                        return;
+                    }
+                    const data = await response.json();
+                    
+                    // データを強制更新
+                    if (Array.isArray(data)) {
+                        this.availableTextures = data.map(filename => ({
+                            name: this.filenameToDisplayName(filename),
+                            type: 'image',
+                            file: filename
+                        }));
+                    } else if (data.textures && Array.isArray(data.textures)) {
+                        const textureArray = data.textures;
+                        this.availableTextures = textureArray.map(item => {
+                            if (typeof item === 'string') {
+                                return {
+                                    name: this.filenameToDisplayName(item),
+                                    type: 'image',
+                                    file: item
+                                };
+                            } else {
+                                return item;
+                            }
+                        });
+                    }
+                    
+                    console.log(`テクスチャリスト更新: ${this.availableTextures.length}個のテクスチャを読み込みました`);
+                    
+                } catch (error) {
+                    console.log('テクスチャリストの更新をスキップ:', error);
+                    // テクスチャは必須ではないのでエラーにしない
+                }
             }
 
             async loadFrameList() {
