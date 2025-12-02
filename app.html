@@ -2104,7 +2104,18 @@
                 return {r, g, b};
             }
 
+            // カラー調整デバウンス用タイマー
+            colorUpdateTimer = null;
+            
             applyColorChange() {
+                // デバウンス処理（100ms遅延）
+                clearTimeout(this.colorUpdateTimer);
+                this.colorUpdateTimer = setTimeout(() => {
+                    this.performColorUpdate();
+                }, 100);
+            }
+            
+            performColorUpdate() {
                 if (this.frameImage) {
                     // 現在のテクスチャ状態に応じて適切な処理を選択
                     if (this.currentTexture === null) {
@@ -2660,7 +2671,8 @@
             }
 
             parseFrameFilename(filename) {
-                const match = filename.match(/(.+?)(\d{3})_PD(\d+)_ZP(\d+)\.png/);
+                const match = filename.match(/(.+?)(\d{3})_PD(\d+)_ZP(\d+)(?:_v[\d\.]+|_\d{8}|_build\d+|_rev\d+)*\.png/);
+
                 if (match) {
                     return {
                         series: match[1],
@@ -2763,6 +2775,21 @@
                 return item;
             }
 
+            // フレームサイズを判定する機能
+            getFrameSize(frameImage) {
+                const width = frameImage.width;
+                const height = frameImage.height;
+                
+                if (width === 1210 && height === 454) {
+                    return 'large';  // 新しい大きいサイズ
+                } else if (width === 605 && height === 227) {
+                    return 'standard';  // 現在の標準サイズ
+                } else {
+                    console.warn(`予期しないフレームサイズ: ${width}×${height}`);
+                    return 'unknown';
+                }
+            }
+
             async selectFrame(filename) {
                 try {
                     this.frameImageName = filename;
@@ -2774,6 +2801,11 @@
                             width: img.width,
                             height: img.height
                         };
+                        
+                        // フレームサイズタイプを判定・保存
+                        this.frameType = this.getFrameSize(img);
+                        console.log(`フレームサイズタイプ: ${this.frameType} (${img.width}×${img.height})`);
+                        
                         // 現在のテクスチャ状態に応じて処理
                         if (this.currentTexture === null) {
                             // テクスチャなし - カラー設定を適用
@@ -3049,13 +3081,29 @@
                 // テクスチャが画像の場合の前処理
                 let textureImageData = null;
                 if (this.currentTexture instanceof Image) {
-                    // テクスチャ画像データを事前に取得（605×227固定）
+                    // フレームサイズタイプに応じてテクスチャサイズを決定
+                    let textureWidth, textureHeight;
+                    if (this.frameType === 'large') {
+                        // 大きいフレーム（1210×454）の場合、605×227テクスチャを2倍に拡大
+                        textureWidth = 1210;
+                        textureHeight = 454;
+                        console.log('大きいフレーム用: テクスチャを605×227→1210×454に拡大');
+                    } else {
+                        // 標準フレーム（605×227）の場合、そのまま使用
+                        textureWidth = 605;
+                        textureHeight = 227;
+                        console.log('標準フレーム用: テクスチャをそのまま使用（605×227）');
+                    }
+                    
+                    // テクスチャ画像データを取得
                     const texCanvas = document.createElement('canvas');
                     const texCtx = texCanvas.getContext('2d');
-                    texCanvas.width = 605;
-                    texCanvas.height = 227;
-                    texCtx.drawImage(this.currentTexture, 0, 0, 605, 227);
-                    textureImageData = texCtx.getImageData(0, 0, 605, 227);
+                    texCanvas.width = textureWidth;
+                    texCanvas.height = textureHeight;
+                    
+                    // テクスチャを指定サイズに描画（リサイズ）
+                    texCtx.drawImage(this.currentTexture, 0, 0, textureWidth, textureHeight);
+                    textureImageData = texCtx.getImageData(0, 0, textureWidth, textureHeight);
                 }
 
                 // ピクセル処理（最適化版）
@@ -3088,21 +3136,31 @@
                             data[i + 1] = patternColor.g;
                             data[i + 2] = patternColor.b;
                         } else if (textureImageData) {
-                            // 画像テクスチャの場合（605×227固定、比率維持）
+                            // 画像テクスチャの場合（フレームサイズに応じて適応）
                             const pixelIndex = Math.floor(i / 4);
                             const x = pixelIndex % canvas.width;
                             const y = Math.floor(pixelIndex / canvas.width);
+                            
+                            // フレームサイズに応じてテクスチャサイズを取得
+                            let texWidth, texHeight;
+                            if (this.frameType === 'large') {
+                                texWidth = 1210;
+                                texHeight = 454;
+                            } else {
+                                texWidth = 605;
+                                texHeight = 227;
+                            }
                             
                             // フレーム画像の座標をテクスチャ座標に変換（同じ比率なので直接マッピング）
                             const texX = Math.floor(x);
                             const texY = Math.floor(y);
                             
                             // テクスチャ画像内の座標に収める
-                            const clampedTexX = Math.max(0, Math.min(604, texX));
-                            const clampedTexY = Math.max(0, Math.min(226, texY));
+                            const clampedTexX = Math.max(0, Math.min(texWidth - 1, texX));
+                            const clampedTexY = Math.max(0, Math.min(texHeight - 1, texY));
                             
                             // テクスチャピクセルを取得
-                            const texIndex = (clampedTexY * 605 + clampedTexX) * 4;
+                            const texIndex = (clampedTexY * texWidth + clampedTexX) * 4;
                             const texR = textureImageData.data[texIndex];
                             const texG = textureImageData.data[texIndex + 1];
                             const texB = textureImageData.data[texIndex + 2];
