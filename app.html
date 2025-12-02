@@ -1891,6 +1891,7 @@
             }
 
             openFaceImage() {
+                this.faceInput.value = ''; // ファイル選択状態をクリア
                 this.faceInput.click();
             }
 
@@ -1924,6 +1925,7 @@
             }
 
             openFrameImage() {
+                this.frameInput.value = ''; // ファイル選択状態をクリア
                 this.frameInput.click();
             }
 
@@ -2545,9 +2547,10 @@
 
             async forceReloadFrameList() {
                 try {
-                    // キャッシュを回避するためタイムスタンプを追加
-                    const timestamp = Date.now();
-                    const response = await fetch(`./frames/frame-list.json?t=${timestamp}`);
+                    // キャッシュをクリアして最新データを取得
+                    const response = await fetch('./frames/frame-list.json', {
+                        cache: 'no-cache'
+                    });
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
@@ -2568,9 +2571,10 @@
 
             async forceReloadTextureList() {
                 try {
-                    // キャッシュを回避するためタイムスタンプを追加
-                    const timestamp = Date.now();
-                    const response = await fetch(`./textures/texture-list.json?t=${timestamp}`);
+                    // キャッシュをクリアして最新データを取得
+                    const response = await fetch('./textures/texture-list.json', {
+                        cache: 'no-cache'
+                    });
                     if (!response.ok) {
                         console.log('texture-list.json が見つかりません（正常）');
                         return;
@@ -2609,18 +2613,27 @@
 
             async loadFrameList() {
                 try {
-                    const response = await fetch('./frames/frame-list.json');
+                    const response = await fetch('./frames/frame-list.json', {
+                        cache: 'no-cache'
+                    });
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const data = await response.json();
                     this.availableFrames = data.frames || data;
                     console.log(`${this.availableFrames.length}個のフレームを読み込みました`);
+                    
+                    // 初期状態で全フレームを表示（フィルターなし）
+                    this.filteredFrames = [...this.availableFrames];
+                    
                 } catch (error) {
                     console.error('フレームリストの読み込みに失敗:', error);
                     this.availableFrames = [];
+                    this.filteredFrames = [];
                     const grid = document.getElementById('frame-grid');
-                    grid.innerHTML = '<div class="loading">フレームリストの読み込みに失敗しました</div>';
+                    if (grid) {
+                        grid.innerHTML = '<div class="loading">フレームリストの読み込みに失敗しました</div>';
+                    }
                 }
             }
 
@@ -2740,7 +2753,7 @@
 
                 const name = document.createElement('div');
                 name.className = 'frame-item-name';
-                name.textContent = filename.replace('.png', '');
+                name.textContent = this.filenameToDisplayName(filename);
 
                 item.appendChild(img);
                 item.appendChild(name);
@@ -2808,7 +2821,9 @@
 
             async loadTextureList() {
                 try {
-                    const response = await fetch('./textures/texture-list.json');
+                    const response = await fetch('./textures/texture-list.json', {
+                        cache: 'no-cache'
+                    });
                     if (!response.ok) {
                         console.log('texture-list.jsonが見つかりません。デフォルトテクスチャを使用します。');
                         this.availableTextures = this.getDefaultTextures();
@@ -2855,10 +2870,14 @@
             }
 
             filenameToDisplayName(filename) {
-                // ファイル名から表示名を生成
+                // ファイル名から表示名を生成（バージョン情報除去対応）
                 return filename
-                    .replace(/\.[^/.]+$/, '')  // 拡張子を削除
-                    .replace(/_/g, ' ')        // アンダースコアをスペースに
+                    .replace(/\.[^/.]+$/, '')      // 拡張子を削除
+                    .replace(/_v[\d\.]+/g, '')     // バージョン削除 (_v1.2, _v2.0.1等)
+                    .replace(/_\d{8}/g, '')        // 日付削除 (_20231201等)
+                    .replace(/_build\d+/g, '')     // ビルド番号削除 (_build001等)
+                    .replace(/_rev\d+/g, '')       // リビジョン削除 (_rev3等)
+                    .replace(/_/g, ' ')            // アンダースコアをスペースに
                     .replace(/\b\w/g, l => l.toUpperCase()); // 各単語の最初を大文字に
             }
 
@@ -3084,9 +3103,16 @@
                             
                             // テクスチャピクセルを取得
                             const texIndex = (clampedTexY * 605 + clampedTexX) * 4;
-                            data[i] = textureImageData.data[texIndex];
-                            data[i + 1] = textureImageData.data[texIndex + 1];
-                            data[i + 2] = textureImageData.data[texIndex + 2];
+                            const texR = textureImageData.data[texIndex];
+                            const texG = textureImageData.data[texIndex + 1];
+                            const texB = textureImageData.data[texIndex + 2];
+                            const texA = textureImageData.data[texIndex + 3];
+                            
+                            // 黒部分を完全にテクスチャで置き換え
+                            data[i] = texR;
+                            data[i + 1] = texG;
+                            data[i + 2] = texB;
+                            data[i + 3] = texA; // テクスチャのアルファ値をそのまま使用
                         }
                     } 
                     // 白っぽい部分（カラー設定のサブカラーを適用）
