@@ -1,0 +1,33 @@
+name: Cleanup Unlisted Files
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_folders:
+        description: '対象フォルダ（カンマ区切り）'
+        required: true
+        default: 'images,uploads'
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+    
+    - name: Run cleanup script
+      env:
+        TARGET_FOLDERS: ${{ github.event.inputs.target_folders }}
+      run: python cleanup.py
+    
+    - name: Commit changes
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add -A
+        git diff --staged --quiet || git commit -m "自動削除: 未使用ファイルを削除"
+        git push
