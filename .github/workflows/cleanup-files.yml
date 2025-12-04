@@ -78,26 +78,3 @@ jobs:
           git push
           echo "✅ プッシュ完了"
         fi
-```
-
-## 使い方
-
-これで、GitHub Actionsを実行するときに以下の2つを指定できます：
-
-1. **Run workflow** をクリック
-2. 入力フォームで以下を指定：
-   - **target_folders**: `images,uploads,assets` （フォルダ名をカンマ区切り）
-   - **json_filename**: `keep-files.json` （使いたいJSON名）
-
-## ファイル構成例
-```
-your-repository/
-├── images/
-│   ├── keep-files.json     # ← カスタムJSON名
-│   ├── image1.jpg
-│   └── image2.png
-├── uploads/
-│   ├── keep-files.json     # ← カスタムJSON名
-│   ├── document.pdf
-│   └── data.csv
-└── cleanup.py
