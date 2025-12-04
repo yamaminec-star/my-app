@@ -7,6 +7,13 @@ on:
         description: '対象フォルダ（カンマ区切り）'
         required: true
         default: 'images,uploads'
+      json_filename:
+        description: 'JSONファイル名'
+        required: true
+        default: 'files.json'
+
+permissions:
+  contents: write
 
 jobs:
   cleanup:
@@ -14,20 +21,83 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     
     - uses: actions/setup-python@v4
       with:
         python-version: '3.x'
     
+    - name: Check files exist
+      run: |
+        echo "=== ファイル確認 ==="
+        echo "JSONファイル名: ${{ github.event.inputs.json_filename }}"
+        echo "対象フォルダ: ${{ github.event.inputs.target_folders }}"
+        echo ""
+        
+        if [ -f "cleanup.py" ]; then
+          echo "✅ cleanup.py が存在します"
+        else
+          echo "❌ cleanup.py が見つかりません"
+          exit 1
+        fi
+        
+        echo ""
+        IFS=',' read -ra FOLDERS <<< "${{ github.event.inputs.target_folders }}"
+        for folder in "${FOLDERS[@]}"; do
+          folder=$(echo "$folder" | xargs)
+          if [ -d "$folder" ]; then
+            echo "✅ $folder フォルダが存在します"
+            json_path="$folder/${{ github.event.inputs.json_filename }}"
+            if [ -f "$json_path" ]; then
+              echo "   ✅ $json_path が存在します"
+            else
+              echo "   ⚠️  $json_path が見つかりません"
+            fi
+          else
+            echo "❌ $folder フォルダが見つかりません"
+          fi
+        done
+    
     - name: Run cleanup script
       env:
         TARGET_FOLDERS: ${{ github.event.inputs.target_folders }}
+        JSON_FILENAME: ${{ github.event.inputs.json_filename }}
       run: python cleanup.py
     
-    - name: Commit changes
+    - name: Commit and push changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add -A
-        git diff --staged --quiet || git commit -m "自動削除: 未使用ファイルを削除"
-        git push
+        
+        if git diff --staged --quiet; then
+          echo "⚠️ 変更がありません"
+        else
+          git commit -m "自動削除: 未使用ファイルを削除 [skip ci]"
+          git push
+          echo "✅ プッシュ完了"
+        fi
+```
+
+## 使い方
+
+これで、GitHub Actionsを実行するときに以下の2つを指定できます：
+
+1. **Run workflow** をクリック
+2. 入力フォームで以下を指定：
+   - **target_folders**: `images,uploads,assets` （フォルダ名をカンマ区切り）
+   - **json_filename**: `keep-files.json` （使いたいJSON名）
+
+## ファイル構成例
+```
+your-repository/
+├── images/
+│   ├── keep-files.json     # ← カスタムJSON名
+│   ├── image1.jpg
+│   └── image2.png
+├── uploads/
+│   ├── keep-files.json     # ← カスタムJSON名
+│   ├── document.pdf
+│   └── data.csv
+└── cleanup.py
