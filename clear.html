@@ -1,15 +1,12 @@
 import json
 import os
-import sys
 from pathlib import Path
 
 def extract_file_list(data):
     """JSONからファイルリストを抽出（どんな形式でも対応）"""
     if isinstance(data, list):
-        # ["file1.png", "file2.png"] 形式
         return set(data)
     elif isinstance(data, dict):
-        # 辞書の場合、最初に見つかった配列を使用
         for key, value in data.items():
             if isinstance(value, list):
                 return set(value)
@@ -42,7 +39,6 @@ def main():
             print(f"❌ {json_filename} が見つかりません")
             continue
         
-        # JSONを読み込み（形式を自動判定）
         try:
             with open(json_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -50,7 +46,6 @@ def main():
                 
             if not valid_files:
                 print(f"⚠️ JSONからファイルリストを抽出できませんでした")
-                print(f"   JSON内容: {data}")
                 continue
                 
             print(f"✅ 保持ファイル: {len(valid_files)}個")
@@ -59,7 +54,6 @@ def main():
             print(f"❌ JSON読み込みエラー: {e}")
             continue
         
-        # 削除判定
         files_to_delete = []
         
         for file_path in dir_path.iterdir():
@@ -67,7 +61,6 @@ def main():
                 if file_path.name not in valid_files:
                     files_to_delete.append(file_path)
         
-        # 削除実行
         if files_to_delete:
             print(f"🗑️ 削除: {len(files_to_delete)}個")
             for f in files_to_delete:
