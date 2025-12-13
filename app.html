@@ -576,7 +576,6 @@
             color: white;
             padding: 16px 20px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #666;
         }
@@ -587,13 +586,36 @@
             font-weight: bold;
         }
 
-        .modal-close-btn {
+        .filter-toggle-btn {
+            background: transparent;
+            color: white;
+            border: none;
+            padding: 8px;
+            margin-left: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s;
+        }
+        
+        .filter-toggle-btn:hover {
+            opacity: 0.7;
+        }
+        
+        .filter-toggle-btn .icon {
+            font-family: 'Material Symbols Outlined';
+            font-size: 28px;
+        }
+
+                .modal-close-btn {
             background: #c74440;
             color: white;
             border: none;
             border-radius: 50%;
             width: 36px;
             height: 36px;
+            margin-left: auto;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -605,17 +627,29 @@
         }
 
         .modal-body {
+            position: relative;
             flex: 1;
             display: flex;
             overflow: hidden;
         }
 
         .frame-filters {
-            background: #2a2a2a;
-            border-right: 2px solid #555;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(42, 42, 42, 0.98);
+            border: none;
+            border-radius: 0;
             padding: 20px;
-            width: 300px;
             overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        
+        .frame-filters.show {
+            display: block;
         }
 
         .filter-group {
@@ -627,6 +661,130 @@
             color: #ccc;
             margin-bottom: 8px;
             font-weight: bold;
+        }
+        
+        .range-row {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .range-item {
+            flex: 1;
+        }
+        
+        .range-item label {
+            display: block;
+            color: #ccc;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .range-slider-container {
+            margin-top: 5px;
+        }
+        
+        .range-slider {
+            position: relative;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .range-slider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 6px;
+            background: #555;
+            border-radius: 3px;
+            pointer-events: none;
+        }
+        
+        .range-slider input[type="range"] {
+            position: absolute;
+            width: 100%;
+            height: 24px;
+            background: transparent;
+            pointer-events: none;
+            -webkit-appearance: none;
+            appearance: none;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .range-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #999;
+            cursor: pointer;
+            pointer-events: auto;
+            border: 3px solid #666;
+            margin-top: 0;
+        }
+        
+        .range-slider input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #999;
+            cursor: pointer;
+            pointer-events: auto;
+            border: 3px solid #666;
+        }
+        
+        .range-slider input[type="range"]::-webkit-slider-thumb:hover {
+            background: #aaa;
+        }
+        
+        .range-slider input[type="range"]::-moz-range-thumb:hover {
+            background: #aaa;
+        }
+        
+        .range-slider input[type="range"]::-webkit-slider-runnable-track {
+            height: 24px;
+            background: transparent;
+        }
+        
+        .range-slider input[type="range"]::-moz-range-track {
+            height: 24px;
+            background: transparent;
+            border: none;
+        }
+        
+        .range-values {
+            color: #ccc;
+            font-size: 13px;
+            text-align: center;
+            font-family: monospace;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .filter-buttons button {
+            flex: 1;
+            padding: 10px;
+            background: #e67e3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .filter-buttons button:hover {
+            background: #d96d2c;
         }
 
         .filter-checkboxes {
@@ -656,21 +814,29 @@
 
         .frame-grid {
             flex: 1;
+            width: 100%;
             padding: 20px;
             overflow-y: auto;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(5, 176px);
+            gap: 12px;
             background: #3a3a3a;
+            justify-content: center;
+            align-content: start;
         }
 
         .frame-item {
             background: #4a4a4a;
             border-radius: 8px;
-            padding: 12px;
+            padding: 8px;
+            height: 100px;
             cursor: pointer;
             transition: all 0.2s;
             border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         .frame-item:hover {
@@ -679,8 +845,8 @@
         }
 
         .frame-item img {
-            width: 100%;
-            height: 120px;
+            width: 160px;
+            height: 60px;
             object-fit: contain;
             background: white;
             border-radius: 4px;
@@ -689,7 +855,7 @@
         .frame-item-name {
             color: white;
             font-size: 12px;
-            margin-top: 8px;
+            margin-top: 6px;
             text-align: center;
         }
 
@@ -1010,25 +1176,48 @@
         <div class="modal-window">
             <div class="modal-header">
                 <h3>フレーム選択</h3>
+                <button class="filter-toggle-btn" id="filter-toggle-btn" onclick="app.toggleFrameFilter()">
+                    <span class="icon">expand_more</span>
+                </button>
                 <button class="modal-close-btn" onclick="app.closeFrameSelector()">
                     <span class="icon">close</span>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="frame-filters">
+                <div class="frame-filters" id="frame-filters">
                     <div class="filter-group">
-                        <label>シリーズ:</label>
+                        <label>品名:</label>
                         <div class="filter-checkboxes" id="series-filters"></div>
                     </div>
                     <div class="filter-group">
-                        <label>PD:</label>
-                        <div class="filter-checkboxes" id="pd-filters"></div>
+                        <div class="range-row">
+                            <div class="range-item">
+                                <label>PD:</label>
+                                <div class="range-slider-container">
+                                    <div class="range-slider">
+                                        <input type="range" id="pd-min" class="range-min" min="58" max="80" value="58" step="1">
+                                        <input type="range" id="pd-max" class="range-max" min="58" max="80" value="80" step="1">
+                                    </div>
+                                    <div class="range-values" id="pd-values">58 - 80</div>
+                                </div>
+                            </div>
+                            <div class="range-item">
+                                <label>OW:</label>
+                                <div class="range-slider-container">
+                                    <div class="range-slider">
+                                        <input type="range" id="ow-min" class="range-min" min="124" max="160" value="124" step="1">
+                                        <input type="range" id="ow-max" class="range-max" min="124" max="160" value="160" step="1">
+                                    </div>
+                                    <div class="range-values" id="ow-values">124 - 160</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="filter-group">
-                        <label>OW:</label>
-                        <div class="filter-checkboxes" id="ow-filters"></div>
+                    <div class="filter-buttons">
+                        <button onclick="app.clearFilterSelection()">選択のクリア</button>
+                        <button onclick="app.updateFrameFilters()">適用</button>
+                        <button onclick="app.toggleFrameFilter()">OK</button>
                     </div>
-                    <button onclick="app.updateFrameFilters()">フィルター適用</button>
                 </div>
                 <div class="frame-grid" id="frame-grid">
                     <div class="loading">フレーム一覧を読み込み中...</div>
@@ -1119,6 +1308,16 @@
                     pd: [],
                     ow: []
                 };
+                this.selectedFilters = {
+                    series: [],
+                    pd: [],
+                    ow: []
+                };
+                this.filterVisible = false;
+                this.pdRange = { min: 58, max: 80 };
+                this.owRange = { min: 124, max: 160 };
+                this.pdAvailableRange = { min: 58, max: 80 };
+                this.owAvailableRange = { min: 124, max: 160 };
                 
                 // テクスチャ関連
                 this.availableTextures = [];
@@ -1146,6 +1345,41 @@
                 
                 // 初期モードボタンの状態を設定
                 this.updateModeButton();
+                
+                // 初期顔画像を生成
+                this.createInitialFaceImage();
+            }
+
+            // 初期顔画像を生成
+            createInitialFaceImage() {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 2000;
+                tempCanvas.height = 2000;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // 白背景
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, 2000, 2000);
+                
+                // テキスト設定
+                tempCtx.fillStyle = 'gray';
+                tempCtx.font = '300px "Franklin Gothic", "Arial Narrow", sans-serif';
+                tempCtx.textAlign = 'center';
+                tempCtx.textBaseline = 'middle';
+                
+                // テキスト描画
+                tempCtx.fillText('JUS4U', 1000, 1000);
+                
+                // Imageオブジェクトに変換
+                const img = new Image();
+                img.onload = () => {
+                    this.baseImage = img;
+                    this.baseImageName = 'JUS4U (初期画像)';
+                    this.redraw();
+                    this.updateStatusBar();
+                    this.updateInfoWindowContent();
+                };
+                img.src = tempCanvas.toDataURL();
             }
 
             loadSettings() {
@@ -2549,11 +2783,39 @@
                 
                 this.setupFrameFilters();
                 this.updateFrameFilters();
+                
+                // フィルター表示状態を復元
+                const filterDiv = document.getElementById('frame-filters');
+                const toggleBtn = document.getElementById('filter-toggle-btn');
+                const icon = toggleBtn.querySelector('.icon');
+                
+                if (this.filterVisible) {
+                    filterDiv.classList.add('show');
+                    icon.textContent = 'expand_less';
+                } else {
+                    filterDiv.classList.remove('show');
+                    icon.textContent = 'expand_more';
+                }
             }
 
             closeFrameSelector() {
                 const modal = document.getElementById('frame-selector-modal');
                 modal.style.display = 'none';
+            }
+
+            toggleFrameFilter() {
+                this.filterVisible = !this.filterVisible;
+                const filterDiv = document.getElementById('frame-filters');
+                const toggleBtn = document.getElementById('filter-toggle-btn');
+                const icon = toggleBtn.querySelector('.icon');
+                
+                if (this.filterVisible) {
+                    filterDiv.classList.add('show');
+                    icon.textContent = 'expand_less';
+                } else {
+                    filterDiv.classList.remove('show');
+                    icon.textContent = 'expand_more';
+                }
             }
 
             async forceReloadFrameList() {
@@ -2651,23 +2913,18 @@
             setupFrameFilters() {
                 // シリーズ名を抽出
                 const seriesSet = new Set();
-                const pdSet = new Set();
-                const owSet = new Set();
 
                 this.availableFrames.forEach(frame => {
                     const filename = typeof frame === 'string' ? frame : frame.filename;
                     const parsed = this.parseFrameFilename(filename);
                     if (parsed) {
                         seriesSet.add(parsed.series);
-                        pdSet.add(parsed.pd);
-                        owSet.add(parsed.ow);
                     }
                 });
 
                 // フィルターUIを作成
                 this.createFilterUI('series-filters', Array.from(seriesSet).sort());
-                this.createFilterUI('pd-filters', Array.from(pdSet).sort((a, b) => a - b));
-                this.createFilterUI('ow-filters', Array.from(owSet).sort((a, b) => a - b));
+                this.setupRangeSliders();
             }
 
             parseFrameFilename(filename) {
@@ -2675,7 +2932,7 @@
 
                 if (match) {
                     return {
-                        series: match[1],
+                        series: match[1] + match[2],
                         number: match[2],
                         pd: parseInt(match[3]),
                         ow: parseInt(match[4])
@@ -2684,9 +2941,93 @@
                 return null;
             }
 
+            setupRangeSliders() {
+                // PDスライダーの設定
+                const pdMin = document.getElementById('pd-min');
+                const pdMax = document.getElementById('pd-max');
+                const pdValues = document.getElementById('pd-values');
+                
+                pdMin.min = this.pdAvailableRange.min;
+                pdMin.max = this.pdAvailableRange.max;
+                pdMax.min = this.pdAvailableRange.min;
+                pdMax.max = this.pdAvailableRange.max;
+                
+                // 保存された値を復元、なければ全範囲
+                pdMin.value = this.pdRange.min || this.pdAvailableRange.min;
+                pdMax.value = this.pdRange.max || this.pdAvailableRange.max;
+                
+                this.updateRangeValues('pd');
+                
+                // OWスライダーの設定
+                const owMin = document.getElementById('ow-min');
+                const owMax = document.getElementById('ow-max');
+                const owValues = document.getElementById('ow-values');
+                
+                owMin.min = this.owAvailableRange.min;
+                owMin.max = this.owAvailableRange.max;
+                owMax.min = this.owAvailableRange.min;
+                owMax.max = this.owAvailableRange.max;
+                
+                // 保存された値を復元、なければ全範囲
+                owMin.value = this.owRange.min || this.owAvailableRange.min;
+                owMax.value = this.owRange.max || this.owAvailableRange.max;
+                
+                this.updateRangeValues('ow');
+                
+                // イベントリスナーの設定
+                pdMin.addEventListener('input', () => {
+                    if (parseInt(pdMin.value) > parseInt(pdMax.value)) {
+                        pdMin.value = pdMax.value;
+                    }
+                    this.updateRangeValues('pd');
+                });
+                
+                pdMax.addEventListener('input', () => {
+                    if (parseInt(pdMax.value) < parseInt(pdMin.value)) {
+                        pdMax.value = pdMin.value;
+                    }
+                    this.updateRangeValues('pd');
+                });
+                
+                owMin.addEventListener('input', () => {
+                    if (parseInt(owMin.value) > parseInt(owMax.value)) {
+                        owMin.value = owMax.value;
+                    }
+                    this.updateRangeValues('ow');
+                });
+                
+                owMax.addEventListener('input', () => {
+                    if (parseInt(owMax.value) < parseInt(owMin.value)) {
+                        owMax.value = owMin.value;
+                    }
+                    this.updateRangeValues('ow');
+                });
+            }
+            
+            updateRangeValues(type) {
+                if (type === 'pd') {
+                    const pdMin = document.getElementById('pd-min');
+                    const pdMax = document.getElementById('pd-max');
+                    const pdValues = document.getElementById('pd-values');
+                    pdValues.textContent = `${pdMin.value} - ${pdMax.value}`;
+                    this.pdRange.min = parseInt(pdMin.value);
+                    this.pdRange.max = parseInt(pdMax.value);
+                } else if (type === 'ow') {
+                    const owMin = document.getElementById('ow-min');
+                    const owMax = document.getElementById('ow-max');
+                    const owValues = document.getElementById('ow-values');
+                    owValues.textContent = `${owMin.value} - ${owMax.value}`;
+                    this.owRange.min = parseInt(owMin.value);
+                    this.owRange.max = parseInt(owMax.value);
+                }
+            }
+
             createFilterUI(containerId, values) {
                 const container = document.getElementById(containerId);
                 if (!container) return;
+
+                const filterType = containerId.replace('-filters', '');
+                const savedSelection = this.selectedFilters[filterType] || [];
 
                 container.innerHTML = '';
                 values.forEach(value => {
@@ -2694,6 +3035,16 @@
                     checkbox.type = 'checkbox';
                     checkbox.id = `${containerId}-${value}`;
                     checkbox.value = value;
+                    
+                    // 保存されている選択状態を復元（型を文字列に統一）
+                    if (savedSelection.includes(String(value))) {
+                        checkbox.checked = true;
+                    }
+                    
+                    // チェック状態が変更されたら保存
+                    checkbox.addEventListener('change', () => {
+                        this.saveFilterSelection(filterType);
+                    });
 
                     const label = document.createElement('label');
                     label.htmlFor = checkbox.id;
@@ -2704,11 +3055,55 @@
                 });
             }
 
+            saveFilterSelection(filterType) {
+                const containerId = filterType + '-filters';
+                const values = this.getSelectedFilterValues(containerId);
+                this.selectedFilters[filterType] = values;
+            }
+
+            clearFilterSelection() {
+                // すべてのチェックボックスを外す
+                const seriesContainer = document.getElementById('series-filters');
+                if (seriesContainer) {
+                    const checkboxes = seriesContainer.querySelectorAll('input[type="checkbox"]');
+                    checkboxes.forEach(cb => cb.checked = false);
+                }
+                
+                // レンジスライダーを全範囲に戻す
+                const pdMin = document.getElementById('pd-min');
+                const pdMax = document.getElementById('pd-max');
+                const owMin = document.getElementById('ow-min');
+                const owMax = document.getElementById('ow-max');
+                
+                if (pdMin && pdMax) {
+                    pdMin.value = this.pdAvailableRange.min;
+                    pdMax.value = this.pdAvailableRange.max;
+                    this.updateRangeValues('pd');
+                }
+                
+                if (owMin && owMax) {
+                    owMin.value = this.owAvailableRange.min;
+                    owMax.value = this.owAvailableRange.max;
+                    this.updateRangeValues('ow');
+                }
+                
+                // 保存状態もクリア
+                this.selectedFilters = {
+                    series: [],
+                    pd: [],
+                    ow: []
+                };
+                
+                // フィルターを更新（すべて表示）
+                this.updateFrameFilters();
+            }
+
             updateFrameFilters() {
                 // 選択されたフィルターを取得
                 const selectedSeries = this.getSelectedFilterValues('series-filters');
-                const selectedPD = this.getSelectedFilterValues('pd-filters');
-                const selectedOW = this.getSelectedFilterValues('ow-filters');
+
+                // 選択状態を保存
+                this.selectedFilters.series = selectedSeries;
 
                 // フィルタリング
                 this.filteredFrames = this.availableFrames.filter(frame => {
@@ -2718,8 +3113,8 @@
                     if (!parsed) return false;
 
                     const seriesMatch = selectedSeries.length === 0 || selectedSeries.includes(parsed.series);
-                    const pdMatch = selectedPD.length === 0 || selectedPD.includes(parsed.pd.toString());
-                    const owMatch = selectedOW.length === 0 || selectedOW.includes(parsed.ow.toString());
+                    const pdMatch = parsed.pd >= this.pdRange.min && parsed.pd <= this.pdRange.max;
+                    const owMatch = parsed.ow >= this.owRange.min && parsed.ow <= this.owRange.max;
 
                     return seriesMatch && pdMatch && owMatch;
                 });
