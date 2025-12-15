@@ -9,6 +9,8 @@
             const urlParams = new URLSearchParams(window.location.search);
             const scaleParam = urlParams.get('scale');
             
+            let appliedScale = 1.0;
+            
             if (scaleParam) {
                 // 数値に変換
                 const scale = parseFloat(scaleParam);
@@ -21,7 +23,22 @@
                 if (viewport && !isNaN(validScale)) {
                     viewport.setAttribute('content', 
                         `width=device-width, initial-scale=${validScale}`);
+                    appliedScale = validScale;
                 }
+            }
+            
+            // フィルターウィンドウのサイズを固定（Transform相殺）
+            if (appliedScale !== 1.0) {
+                window.addEventListener('DOMContentLoaded', function() {
+                    const filterWindow = document.getElementById('frame-filters');
+                    if (filterWindow) {
+                        const inverseScale = 1 / appliedScale;
+                        filterWindow.style.transform = `scale(${inverseScale})`;
+                        filterWindow.style.transformOrigin = 'top left';
+                        // 相殺後の幅を調整
+                        filterWindow.style.width = `${100 * appliedScale}%`;
+                    }
+                });
             }
         })();
     </script>
@@ -840,7 +857,6 @@
             padding: 20px;
             overflow-y: auto;
             display: grid;
-            grid-template-columns: repeat(5, 176px);
             gap: 12px;
             background: #3a3a3a;
             justify-content: center;
@@ -867,8 +883,6 @@
         }
 
         .frame-item img {
-            width: 160px;
-            height: 60px;
             object-fit: contain;
             background: white;
             border-radius: 4px;
@@ -1340,6 +1354,14 @@
                 this.owRange = { min: 124, max: 160 };
                 this.pdAvailableRange = { min: 58, max: 80 };
                 this.owAvailableRange = { min: 124, max: 160 };
+                
+                // 物理ピクセル表示設定
+                this.dpr = window.devicePixelRatio || 1;
+                this.physicalImageWidth = 160;
+                this.physicalImageHeight = 60;
+                this.logicalImageWidth = this.physicalImageWidth / this.dpr;
+                this.logicalImageHeight = this.physicalImageHeight / this.dpr;
+                this.gridColumns = this.calculateGridColumns();
                 
                 // テクスチャ関連
                 this.availableTextures = [];
@@ -2947,6 +2969,9 @@
                 // フィルターUIを作成
                 this.createFilterUI('series-filters', Array.from(seriesSet).sort());
                 this.setupRangeSliders();
+                
+                // グリッドサイズを更新
+                this.updateGridLayout();
             }
 
             parseFrameFilename(filename) {
@@ -2961,6 +2986,11 @@
                     };
                 }
                 return null;
+            }
+
+            calculateGridColumns() {
+                const physicalWidth = window.screen.width;
+                return physicalWidth >= 1100 ? 5 : 3;
             }
 
             setupRangeSliders() {
@@ -3026,6 +3056,28 @@
                 });
             }
             
+            updateGridLayout() {
+                const frameGrid = document.querySelector('.frame-grid');
+                if (!frameGrid) return;
+                
+                // アイテム幅 = 画像幅 + padding 16px
+                const itemWidth = this.logicalImageWidth + 16;
+                
+                // グリッドを更新
+                frameGrid.style.gridTemplateColumns = `repeat(${this.gridColumns}, ${itemWidth}px)`;
+                
+                // 既存の画像サイズも更新
+                this.updateAllFrameItemSizes();
+            }
+            
+            updateAllFrameItemSizes() {
+                const images = document.querySelectorAll('.frame-item img');
+                images.forEach(img => {
+                    img.style.width = this.logicalImageWidth + 'px';
+                    img.style.height = this.logicalImageHeight + 'px';
+                });
+            }
+
             updateRangeValues(type) {
                 if (type === 'pd') {
                     const pdMin = document.getElementById('pd-min');
@@ -3176,6 +3228,8 @@
                 const img = document.createElement('img');
                 img.src = `./frames/${filename}`;
                 img.alt = filename;
+                img.style.width = this.logicalImageWidth + 'px';
+                img.style.height = this.logicalImageHeight + 'px';
                 img.onerror = () => {
                     img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkVycm9yPC90ZXh0Pgo8L3N2Zz4K';
                 };
