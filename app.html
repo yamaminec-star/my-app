@@ -702,6 +702,44 @@
             font-weight: bold;
         }
         
+        .column-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #555;
+        }
+        
+        .column-selector span {
+            color: #ccc;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .column-selector button {
+            background: #4a4a4a;
+            color: white;
+            border: 2px solid #666;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            min-width: 36px;
+        }
+        
+        .column-selector button:hover {
+            background: #5a5a5a;
+            border-color: #888;
+        }
+        
+        .column-selector button.active {
+            background: #e67e3c;
+            border-color: #e67e3c;
+        }
+
         .range-row {
             display: flex;
             gap: 30px;
@@ -867,7 +905,6 @@
             background: #4a4a4a;
             border-radius: 8px;
             padding: 8px;
-            height: 100px;
             cursor: pointer;
             transition: all 0.2s;
             border: 2px solid transparent;
@@ -1221,6 +1258,14 @@
             </div>
             <div class="modal-body">
                 <div class="frame-filters" id="frame-filters">
+                    <div class="column-selector">
+                        <span>表示：</span>
+                        <button onclick="app.setGridColumns(1)">1</button>
+                        <button onclick="app.setGridColumns(2)">2</button>
+                        <button onclick="app.setGridColumns(3)">3</button>
+                        <button onclick="app.setGridColumns(4)">4</button>
+                        <button onclick="app.setGridColumns(5)" class="active">5</button>
+                    </div>
                     <div class="filter-group">
                         <label>品名:</label>
                         <div class="filter-checkboxes" id="series-filters"></div>
@@ -1355,13 +1400,8 @@
                 this.pdAvailableRange = { min: 58, max: 80 };
                 this.owAvailableRange = { min: 124, max: 160 };
                 
-                // 物理ピクセル表示設定
-                this.dpr = window.devicePixelRatio || 1;
-                this.physicalImageWidth = 160;
-                this.physicalImageHeight = 60;
-                this.logicalImageWidth = this.physicalImageWidth / this.dpr;
-                this.logicalImageHeight = this.physicalImageHeight / this.dpr;
-                this.gridColumns = this.calculateGridColumns();
+                // グリッド列数（デフォルト5列、localStorageから読み込み）
+                this.gridColumns = parseInt(localStorage.getItem('gridColumns')) || 5;
                 
                 // テクスチャ関連
                 this.availableTextures = [];
@@ -2840,6 +2880,17 @@
                     filterDiv.classList.remove('show');
                     icon.textContent = 'expand_more';
                 }
+                
+                // 列数ボタンのactiveクラスを設定
+                document.querySelectorAll('.column-selector button').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (parseInt(btn.textContent) === this.gridColumns) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                // グリッドレイアウトを更新（画像サイズ計算）
+                setTimeout(() => this.updateGridLayout(), 100);
             }
 
             closeFrameSelector() {
@@ -2988,9 +3039,20 @@
                 return null;
             }
 
-            calculateGridColumns() {
-                const physicalWidth = window.screen.width;
-                return physicalWidth >= 980 ? 5 : 3;
+            setGridColumns(columns) {
+                this.gridColumns = columns;
+                localStorage.setItem('gridColumns', columns);
+                
+                // ボタンのactiveクラスを更新
+                document.querySelectorAll('.column-selector button').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (parseInt(btn.textContent) === columns) {
+                        btn.classList.add('active');
+                    }
+                });
+                
+                // グリッドを更新
+                this.updateGridLayout();
             }
 
             setupRangeSliders() {
@@ -3060,21 +3122,41 @@
                 const frameGrid = document.querySelector('.frame-grid');
                 if (!frameGrid) return;
                 
-                // アイテム幅 = 画像幅 + padding 16px
-                const itemWidth = this.logicalImageWidth + 16;
+                // グリッドを列数で等分
+                frameGrid.style.gridTemplateColumns = `repeat(${this.gridColumns}, 1fr)`;
                 
-                // グリッドを更新
-                frameGrid.style.gridTemplateColumns = `repeat(${this.gridColumns}, ${itemWidth}px)`;
-                
-                // 既存の画像サイズも更新
+                // 画像サイズを計算して更新
                 this.updateAllFrameItemSizes();
             }
             
             updateAllFrameItemSizes() {
+                const frameGrid = document.querySelector('.frame-grid');
+                if (!frameGrid) return;
+                
+                // modal-bodyの幅を取得
+                const modalBody = frameGrid.parentElement;
+                const bodyWidth = modalBody.clientWidth;
+                
+                // 利用可能幅 = body幅 - padding左右
+                const availableWidth = bodyWidth - 40; // padding 20px × 2
+                
+                // gap の合計 = 12px × (列数 - 1)
+                const totalGap = 12 * (this.gridColumns - 1);
+                
+                // 1列あたりの幅
+                const columnWidth = (availableWidth - totalGap) / this.gridColumns;
+                
+                // アイテムpadding を引いた画像幅
+                const imageWidth = columnWidth - 16; // padding 8px × 2
+                
+                // アスペクト比8:3で高さを計算
+                const imageHeight = imageWidth * (3 / 8);
+                
+                // すべての画像に適用
                 const images = document.querySelectorAll('.frame-item img');
                 images.forEach(img => {
-                    img.style.width = this.logicalImageWidth + 'px';
-                    img.style.height = this.logicalImageHeight + 'px';
+                    img.style.width = imageWidth + 'px';
+                    img.style.height = imageHeight + 'px';
                 });
             }
 
@@ -3228,8 +3310,7 @@
                 const img = document.createElement('img');
                 img.src = `./frames/${filename}`;
                 img.alt = filename;
-                img.style.width = this.logicalImageWidth + 'px';
-                img.style.height = this.logicalImageHeight + 'px';
+                // サイズはupdateAllFrameItemSizesで設定される
                 img.onerror = () => {
                     img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+CiAgPHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkVycm9yPC90ZXh0Pgo8L3N2Zz4K';
                 };
