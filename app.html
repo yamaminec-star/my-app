@@ -358,8 +358,8 @@
         
         #texture-window {
             top: 140px;
-            left: calc(50% + 50px);
-            width: 500px;
+            left: calc(50%);
+            width: 220px;
             max-height: 70vh;
         }
         
@@ -951,10 +951,12 @@
 
         /* テクスチャウィンドウ専用スタイル */
         .texture-grid {
-            padding: 20px;
+            padding: 0;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 12px;
+ 		
+
+            grid-template-columns: 1fr;
+            gap: 0;
             background: #3a3a3a;
             max-height: 400px;
             overflow-y: auto;
@@ -962,41 +964,43 @@
 
         .texture-item {
             background: #4a4a4a;
-            border-radius: 6px;
-            padding: 8px;
+            border-radius: 0;
+            padding: 0px;
             cursor: pointer;
             transition: all 0.2s;
             border: 2px solid transparent;
+            border-bottom: 1px solid #333;
+            margin: 0;
         }
 
         .texture-item:hover {
             background: #5a5a5a;
-            border-color: #e67e3c;
         }
 
         .texture-item.selected {
-            border-color: #e67e3c;
-            background: #5a5a5a;
+            background: #e67e3c;
         }
 
         .texture-preview {
             width: 100%;
-            height: 60px;
-            border-radius: 4px;
+            aspect-ratio: 8 / 3;
+            border-radius: 0;
             background-size: cover;
             background-position: center;
-            border: 1px solid #666;
+            border: none;
         }
 
         .texture-item-name {
             color: white;
-            font-size: 11px;
+            font-size: 12px;
             margin-top: 6px;
             text-align: center;
             line-height: 1.2;
         }
-            text-align: center;
-        }
+
+text-align: center; 
+} 
+           
     </style>
 </head>
 <body>
@@ -1019,6 +1023,9 @@
         </button>
         <button class="chevron-button" id="reload-frame-btn" title="フレーム・テクスチャデータ更新">
             <span class="icon">refresh</span>
+        </button>
+        <button class="chevron-button" id="test-mode-btn" title="テストモード">
+            <span class="icon">bug_report</span>
         </button>
         <button class="menu-toggle" id="info-window-btn" title="情報パネル">
             <span class="icon">menu</span>
@@ -1236,7 +1243,7 @@
             <div class="window-drag-bar">
                 <div class="window-title">
                     <span class="icon">texture</span>
-                    テクスチャ選択
+                    生地選択
                 </div>
             </div>
             <button class="close-btn" id="texture-window-close">
@@ -1305,7 +1312,7 @@
                         </div>
                     </div>
                     <div class="filter-buttons">
-                        <button onclick="app.clearFilterSelection()">選択のクリア</button>
+                        <button onclick="app.clearFilterSelection()">クリア</button>
                         <button onclick="app.updateFrameFilters()">適用</button>
                         <button onclick="app.toggleFrameFilter()">OK</button>
                     </div>
@@ -1349,7 +1356,8 @@
                 this.frameImageName = '';
                 this.baseRealSize = 60; // 顔写真の実寸（初期値60mm）
                 this.frameRealSize = 160;
-                this.mode = 'measure'; // 'measure' or 'adjust'
+                this.mode = 'adjust'; // 'measure' or 'adjust'
+                this.testMode = false; // テストモード
                 
                 // フォルダパス
                 this.faceFolder = '';
@@ -1607,7 +1615,12 @@
                 const reloadFrameBtn = document.getElementById('reload-frame-btn');
                 if (reloadFrameBtn) reloadFrameBtn.addEventListener('click', () => {
                     this.setAdjustMode();
-                    this.reloadFrame();
+                    this.resetSettings();
+                });
+                
+                const testModeBtn = document.getElementById('test-mode-btn');
+                if (testModeBtn) testModeBtn.addEventListener('click', () => {
+                    this.toggleTestMode();
                 });
                 
                 const infoWindowBtn = document.getElementById('info-window-btn');
@@ -2990,6 +3003,15 @@
             }
 
             async loadFrameList() {
+                // テストモードの場合はダミーデータを使用
+                if (this.testMode) {
+                    const dummyFrames = this.generateDummyFrames();
+                    this.availableFrames = dummyFrames;
+                    this.filteredFrames = [...this.availableFrames];
+                    console.log(`テストモード: ${this.availableFrames.length}個のダミーフレームを生成しました`);
+                    return;
+                }
+                
                 try {
                     const response = await fetch('./frames/frame-list.json', {
                         cache: 'no-cache'
@@ -3286,6 +3308,9 @@
                 });
 
                 this.renderFrameGrid();
+                
+                // グリッドレイアウトを更新（画像サイズ再計算）
+                setTimeout(() => this.updateGridLayout(), 100);
             }
 
             getSelectedFilterValues(containerId) {
@@ -3318,7 +3343,17 @@
                 item.className = 'frame-item';
 
                 const img = document.createElement('img');
-                img.src = `./frames/${filename}`;
+                
+                // テストモードの場合はダミーデータを使用
+                if (this.testMode) {
+                    const frame = this.availableFrames.find(f => f.filename === filename);
+                    if (frame && frame.data) {
+                        img.src = frame.data;
+                    }
+                } else {
+                    img.src = `./frames/${filename}`;
+                }
+                
                 img.alt = filename;
                 // サイズはupdateAllFrameItemSizesで設定される
                 img.onerror = () => {
@@ -3337,20 +3372,7 @@
                 return item;
             }
 
-            // フレームサイズを判定する機能
-            getFrameSize(frameImage) {
-                const width = frameImage.width;
-                const height = frameImage.height;
-                
-                if (width === 1210 && height === 454) {
-                    return 'large';  // 新しい大きいサイズ
-                } else if (width === 605 && height === 227) {
-                    return 'standard';  // 現在の標準サイズ
-                } else {
-                    console.warn(`予期しないフレームサイズ: ${width}×${height}`);
-                    return 'unknown';
-                }
-            }
+         
 
             async selectFrame(filename) {
                 try {
@@ -3364,9 +3386,7 @@
                             height: img.height
                         };
                         
-                        // フレームサイズタイプを判定・保存
-                        this.frameType = this.getFrameSize(img);
-                        console.log(`フレームサイズタイプ: ${this.frameType} (${img.width}×${img.height})`);
+                       
                         
                         // 現在のテクスチャ状態に応じて処理
                         if (this.currentTexture === null) {
@@ -3388,7 +3408,17 @@
                         console.error('フレーム画像の読み込みに失敗:', filename);
                     };
                     
-                    img.src = `./frames/${filename}`;
+                    // テストモードの場合はダミーデータを使用
+                    if (this.testMode) {
+                        const frame = this.availableFrames.find(f => f.filename === filename);
+                        if (frame && frame.data) {
+                            img.src = frame.data;
+                        } else {
+                            console.error('テストモード: フレームデータが見つかりません:', filename);
+                        }
+                    } else {
+                        img.src = `./frames/${filename}`;
+                    }
                 } catch (error) {
                     console.error('フレーム選択エラー:', error);
                 }
@@ -3414,6 +3444,13 @@
             }
 
             async loadTextureList() {
+                // テストモードの場合はダミーデータを使用
+                if (this.testMode) {
+                    this.availableTextures = this.generateDummyTextures();
+                    console.log(`テストモード: ${this.availableTextures.length}個のダミーテクスチャを生成しました`);
+                    return;
+                }
+                
                 try {
                     const response = await fetch('./textures/texture-list.json', {
                         cache: 'no-cache'
@@ -3571,8 +3608,8 @@
                             // 外部画像ファイルを読み込み（605×227固定サイズ）
                             const img = new Image();
                             img.onload = () => {
-                                // 画像が605×227でない場合は警告
-                                if (img.width !== 605 || img.height !== 227) {
+                                // 画像が605×227でない場合は警告（テストモードでは無視）
+                                if (!this.testMode && (img.width !== 605 || img.height !== 227)) {
                                     console.warn(`テクスチャ画像 ${textureData.file} のサイズが ${img.width}×${img.height} です。推奨サイズは605×227です。`);
                                 }
                                 this.currentTexture = img;
@@ -3584,7 +3621,13 @@
                             img.onerror = () => {
                                 console.error('テクスチャ画像の読み込みに失敗:', textureData.file);
                             };
-                            img.src = `./textures/${textureData.file}`;
+                            
+                            // テストモードの場合はダミーデータを使用
+                            if (this.testMode && textureData.data) {
+                                img.src = textureData.data;
+                            } else {
+                                img.src = `./textures/${textureData.file}`;
+                            }
                             return; // 非同期処理のためここで返る
                         } else {
                             // パターンまたは色
@@ -3888,7 +3931,7 @@
                 this.infoWindowVisible = false;
                 this.textureWindowVisible = false;
                 this.currentColorTab = 'black';
-                this.mode = 'measure';
+                this.mode = 'adjust';
                 
                 // ウィンドウを閉じる
                 const colorWindow = document.getElementById('color-window');
@@ -3928,11 +3971,161 @@
                 
                 console.log('リセット完了');
             }
+
+            // テストモード切り替え
+            toggleTestMode() {
+                this.testMode = !this.testMode;
+                const testModeBtn = document.getElementById('test-mode-btn');
+                if (testModeBtn) {
+                    if (this.testMode) {
+                        testModeBtn.classList.add('active');
+                        console.log('テストモード: ON');
+                    } else {
+                        testModeBtn.classList.remove('active');
+                        console.log('テストモード: OFF');
+                    }
+                }
+                
+                // フレームとテクスチャリストをクリア（再読み込みを促す）
+                this.availableFrames = [];
+                this.availableTextures = [];
+            }
+
+            // 設定のリセット（画像は保持）
+            resetSettings() {
+                console.log('設定を初期値にリセットします...');
+                
+                // 測定データをクリア
+                this.measurementPoints = [];
+                this.pixelDistance = 0;
+                this.realDistance = 0;
+                this.scaleRatio = 0;
+                this.draggingPointIndex = -1;
+                
+                // 設定を初期値に戻す
+                this.baseRealSize = 60;
+                this.frameRealSize = 160;
+                this.frameOffset = {x: 100, y: 100};
+                
+                // カラー設定を初期値に戻す
+                this.hue = 0;
+                this.saturation = 100;
+                this.brightness = 0;
+                this.opacity = 100;
+                this.subHue = 0;
+                this.subSaturation = 0;
+                this.subBrightness = 0;
+                this.subOpacity = 0;
+                
+                // ウィンドウ位置をクリア
+                this.windowPositions = {};
+                
+                // ウィンドウ位置を初期値に戻す（transformをクリア）
+                ['magnifier', 'info-window', 'color-window', 'texture-window'].forEach(windowId => {
+                    const windowElement = document.getElementById(windowId);
+                    if (windowElement) {
+                        windowElement.style.transform = '';
+                        console.log(`ウィンドウ位置をリセット: ${windowId}`);
+                    }
+                });
+                
+                // LocalStorageから設定を削除
+                localStorage.removeItem('faceMeasurementSettings');
+                
+                // UIを更新
+                this.applySettingsToUI();
+                this.updateModeButton();
+                this.updateStatusBar();
+                this.updateInfoWindowContent();
+                
+                // フレームがある場合は再適用
+                if (this.originalFrameImage) {
+                    if (this.currentTexture === null) {
+                        this.applyColorAndResize();
+                    } else {
+                        this.applyTextureAndResize();
+                    }
+                }
+                
+                this.redraw();
+                
+                console.log('設定リセット完了');
+            }
+
+            // ダミーフレーム画像を生成（30個）
+            generateDummyFrames() {
+                const frames = [];
+                for (let i = 1; i <= 30; i++) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 1600;
+                    canvas.height = 600;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 透明背景
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // 黒文字
+                    ctx.fillStyle = 'black';
+                    ctx.font = 'bold 200px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(`TEST${i}`, canvas.width / 2, canvas.height / 2);
+                    
+                    // base64に変換
+                    const dataUrl = canvas.toDataURL('image/png');
+                    
+                    frames.push({
+                        filename: `TEST${String(i).padStart(3, '0')}_PD065_OW145.png`,
+                        data: dataUrl
+                    });
+                }
+                return frames;
+            }
+
+            // ダミーテクスチャ画像を生成（10個）
+            generateDummyTextures() {
+                const colors = [
+                    {name: 'Red', color: '#FF0000'},
+                    {name: 'Blue', color: '#0000FF'},
+                    {name: 'Green', color: '#00FF00'},
+                    {name: 'Yellow', color: '#FFFF00'},
+                    {name: 'Purple', color: '#800080'},
+                    {name: 'Orange', color: '#FFA500'},
+                    {name: 'Pink', color: '#FFC0CB'},
+                    {name: 'Cyan', color: '#00FFFF'},
+                    {name: 'Gray', color: '#808080'},
+                    {name: 'Brown', color: '#A52A2A'}
+                ];
+                
+                const textures = [];
+                colors.forEach((colorData, i) => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 10;
+                    canvas.height = 10;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 単色で塗りつぶし
+                    ctx.fillStyle = colorData.color;
+                    ctx.fillRect(0, 0, 10, 10);
+                    
+                    // base64に変換
+                    const dataUrl = canvas.toDataURL('image/png');
+                    
+                    textures.push({
+                        name: `Test ${colorData.name}`,
+                        type: 'image',
+                        file: `test_${colorData.name.toLowerCase()}.png`,
+                        data: dataUrl
+                    });
+                });
+                
+                return textures;
+            }
         }
 
-        // ウィンドウドラッグ機能
+        // ウィンドウドラッグ機能（汎用）
         function makeDraggable(windowElement) {
-            const dragBar = windowElement.querySelector('.window-drag-bar');
+            const dragBar = windowElement.querySelector('.window-drag-bar, .magnifier-drag-bar');
             if (!dragBar) return;
             
             let isDragging = false;
@@ -4003,73 +4196,8 @@
             makeDraggable(document.getElementById('color-window'));
             makeDraggable(document.getElementById('info-window'));
             makeDraggable(document.getElementById('texture-window'));
-            
-            // 拡大鏡をドラッグ可能にする
-            makeDraggableMagnifier(document.getElementById('magnifier'));
+            makeDraggable(document.getElementById('magnifier'));
         });
-        
-        // 拡大鏡専用のドラッグ機能（ドラッグバーのみ）
-        function makeDraggableMagnifier(magnifierElement) {
-            const dragBar = magnifierElement.querySelector('.magnifier-drag-bar');
-            if (!dragBar) return;
-            
-            let isDragging = false;
-            let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
-
-            // マウスイベント
-            dragBar.addEventListener('mousedown', dragStart);
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('mouseup', dragEnd);
-            
-            // タッチイベント
-            dragBar.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                const touch = e.touches[0];
-                dragStart({clientX: touch.clientX, clientY: touch.clientY});
-            }, {passive: false});
-            
-            document.addEventListener('touchmove', (e) => {
-                if (isDragging) {
-                    e.preventDefault();
-                    const touch = e.touches[0];
-                    drag({clientX: touch.clientX, clientY: touch.clientY});
-                }
-            }, {passive: false});
-            
-            document.addEventListener('touchend', dragEnd);
-
-            function dragStart(e) {
-                initialX = e.clientX - xOffset;
-                initialY = e.clientY - yOffset;
-                isDragging = true;
-            }
-
-            function drag(e) {
-                if (isDragging) {
-                    e.preventDefault && e.preventDefault();
-                    currentX = e.clientX - initialX;
-                    currentY = e.clientY - initialY;
-                    xOffset = currentX;
-                    yOffset = currentY;
-                    setTranslate(currentX, currentY, magnifierElement);
-                }
-            }
-
-            function dragEnd(e) {
-                initialX = currentX;
-                initialY = currentY;
-                isDragging = false;
-                
-                // 拡大鏡の位置を保存
-                if (app && magnifierElement.id) {
-                    app.saveWindowPosition(magnifierElement.id);
-                }
-            }
-
-            function setTranslate(xPos, yPos, el) {
-                el.style.transform = `translate(${xPos}px, ${yPos}px)`;
-            }
-        }
     </script>
 </body>
 </html>
