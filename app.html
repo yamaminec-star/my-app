@@ -67,11 +67,12 @@
             background: #2c5f7c;
             padding: 0;
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             align-items: stretch;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             position: relative;
             z-index: 100;
+            height: 62px;
         }
 
         .chevron-button {
@@ -79,7 +80,7 @@
             background: #2c5f7c;
             color: white;
             border: none;
-            padding: 16px 30px;
+            padding: 15px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -88,14 +89,7 @@
             font-size: 15px;
             font-weight: bold;
             transition: all 0.3s ease;
-            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%, 15px 50%);
-            margin-left: -15px;
             touch-action: manipulation;
-        }
-
-        .chevron-button:first-child {
-            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 0 100%);
-            margin-left: 0;
         }
 
         .chevron-button.active {
@@ -108,7 +102,7 @@
 
         .chevron-button .icon {
             font-family: 'Material Symbols Outlined';
-            font-size: 28px;
+            font-size: 32px;
             line-height: 1;
             font-weight: normal;
             font-style: normal;
@@ -124,12 +118,11 @@
             background: #2c5f7c;
             color: white;
             border: none;
-            padding: 16px 25px;
+            padding: 15px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-left: auto;
             font-size: 28px;
             touch-action: manipulation;
         }
@@ -141,6 +134,43 @@
 
         .menu-toggle:hover {
             background: #3a7a9f;
+        }
+
+        /* ページ切り替えボタン */
+        .menu-page-toggle {
+            background: #2c5f7c;
+            color: white;
+            border: none;
+            padding: 15px 7.5px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        .menu-page-toggle .icon {
+            font-family: 'Material Symbols Outlined';
+            font-size: 16px;
+        }
+
+        .menu-page-toggle:hover {
+            background: #3a7a9f;
+        }
+
+        /* レスポンシブメニュー（700px以下） */
+        @media (max-width: 700px) {
+            .chevron-button, .menu-toggle {
+                display: none;
+            }
+
+            .chevron-button.page-visible, .menu-toggle.page-visible {
+                display: flex;
+            }
+
+            .menu-page-toggle {
+                display: flex;
+            }
         }
 
         /* 情報バー（PD + 製品名） */
@@ -953,8 +983,6 @@
         .texture-grid {
             padding: 0;
             display: grid;
- 		
-
             grid-template-columns: 1fr;
             gap: 0;
             background: #3a3a3a;
@@ -965,7 +993,7 @@
         .texture-item {
             background: #4a4a4a;
             border-radius: 0;
-            padding: 0px;
+            padding: 12px;
             cursor: pointer;
             transition: all 0.2s;
             border: 2px solid transparent;
@@ -992,15 +1020,13 @@
 
         .texture-item-name {
             color: white;
-            font-size: 12px;
+            font-size: 11px;
             margin-top: 6px;
             text-align: center;
             line-height: 1.2;
         }
-
-text-align: center; 
-} 
-           
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -1027,11 +1053,14 @@ text-align: center;
         <button class="chevron-button" id="test-mode-btn" title="テストモード">
             <span class="icon">bug_report</span>
         </button>
-        <button class="menu-toggle" id="info-window-btn" title="情報パネル">
+        <button class="menu-toggle" id="info-window-btn" title="情報パネル" style="margin-left: auto;">
             <span class="icon">menu</span>
         </button>
-        <button class="menu-toggle" id="save-image-btn" title="画像を保存" style="margin-left: 0;">
+        <button class="menu-toggle" id="save-image-btn" title="画像を保存">
             <span class="icon">save</span>
+        </button>
+        <button class="menu-page-toggle" id="menu-page-toggle-btn" title="ページ切替">
+            <span class="icon" id="menu-page-toggle-icon">chevron_right</span>
         </button>
     </div>
 
@@ -1233,6 +1262,19 @@ text-align: center;
                         測定点なし
                     </div>
                 </div>
+
+                <!-- 表示スケール設定 -->
+                <div style="margin-bottom: 16px;">
+                    <div style="font-weight: bold; margin-bottom: 8px; color: #ccc; border-bottom: 1px solid #555; padding-bottom: 4px;">表示スケール</div>
+                    <div style="padding-left: 12px;">
+                        <div style="margin-bottom: 8px;">
+                            倍率: <input type="number" id="scale-input" min="0.1" max="3.0" step="0.1" value="1.0" style="width: 80px; padding: 4px 8px; background: #2a2a2a; border: 1px solid #555; border-radius: 4px; color: white;">
+                        </div>
+                        <div style="word-break: break-all; font-size: 12px; color: #aaa;">
+                            <a id="scale-link" href="" target="_blank" style="color: #4a9eff; text-decoration: none;">リンクを生成中...</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1312,7 +1354,7 @@ text-align: center;
                         </div>
                     </div>
                     <div class="filter-buttons">
-                        <button onclick="app.clearFilterSelection()">クリア</button>
+                        <button onclick="app.clearFilterSelection()">選択のクリア</button>
                         <button onclick="app.updateFrameFilters()">適用</button>
                         <button onclick="app.toggleFrameFilter()">OK</button>
                     </div>
@@ -1358,6 +1400,8 @@ text-align: center;
                 this.frameRealSize = 160;
                 this.mode = 'adjust'; // 'measure' or 'adjust'
                 this.testMode = false; // テストモード
+                this.menuPage = 0; // メニューページ（0 or 1）
+                this.currentScale = 1.0; // 現在の表示スケール
                 
                 // フォルダパス
                 this.faceFolder = '';
@@ -1699,6 +1743,48 @@ text-align: center;
                         this.resetAll();
                     }
                 });
+                
+                // スケール設定のイベントリスナー
+                const scaleInput = document.getElementById('scale-input');
+                const scaleLink = document.getElementById('scale-link');
+                if (scaleInput && scaleLink) {
+                    // URLパラメータから現在のスケールを取得
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const scaleParam = urlParams.get('scale');
+                    if (scaleParam) {
+                        const scale = parseFloat(scaleParam);
+                        this.currentScale = Math.max(0.1, Math.min(3.0, scale));
+                    }
+                    scaleInput.value = this.currentScale.toFixed(1);
+                    
+                    // リンクを更新
+                    this.updateScaleLink();
+                    
+                    // 入力時にリアルタイム更新
+                    scaleInput.addEventListener('input', () => {
+                        const value = parseFloat(scaleInput.value);
+                        if (!isNaN(value) && value >= 0.1 && value <= 3.0) {
+                            this.currentScale = value;
+                            this.updateScaleLink();
+                        }
+                    });
+                }
+                
+                // メニューページネーションのイベントリスナー
+                const toggleBtn = document.getElementById('menu-page-toggle-btn');
+                const toggleIcon = document.getElementById('menu-page-toggle-icon');
+                if (toggleBtn && toggleIcon) {
+                    toggleBtn.addEventListener('click', () => {
+                        this.menuPage = this.menuPage === 0 ? 1 : 0;
+                        // アイコンを変更
+                        toggleIcon.textContent = this.menuPage === 0 ? 'chevron_right' : 'chevron_left';
+                        this.updateMenuDisplay();
+                    });
+                    
+                    // リサイズ時にメニュー表示を更新
+                    window.addEventListener('resize', () => this.updateMenuDisplay());
+                    this.updateMenuDisplay();
+                }
             }
 
             setupColorPicker(colorType) {
@@ -3372,7 +3458,20 @@ text-align: center;
                 return item;
             }
 
-         
+            // フレームサイズを判定する機能
+            getFrameSize(frameImage) {
+                const width = frameImage.width;
+                const height = frameImage.height;
+                
+                if (width === 1210 && height === 454) {
+                    return 'large';  // 新しい大きいサイズ
+                } else if (width === 605 && height === 227) {
+                    return 'standard';  // 現在の標準サイズ
+                } else {
+                    console.warn(`予期しないフレームサイズ: ${width}×${height}`);
+                    return 'unknown';
+                }
+            }
 
             async selectFrame(filename) {
                 try {
@@ -3386,7 +3485,9 @@ text-align: center;
                             height: img.height
                         };
                         
-                       
+                        // フレームサイズタイプを判定・保存
+                        this.frameType = this.getFrameSize(img);
+                        console.log(`フレームサイズタイプ: ${this.frameType} (${img.width}×${img.height})`);
                         
                         // 現在のテクスチャ状態に応じて処理
                         if (this.currentTexture === null) {
@@ -4050,6 +4151,65 @@ text-align: center;
                 this.redraw();
                 
                 console.log('設定リセット完了');
+            }
+
+            // スケールリンクを更新
+            updateScaleLink() {
+                const scaleLink = document.getElementById('scale-link');
+                if (scaleLink) {
+                    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+                    const newUrl = `${baseUrl}?scale=${this.currentScale.toFixed(1)}`;
+                    scaleLink.href = newUrl;
+                    scaleLink.textContent = newUrl;
+                }
+            }
+
+            // メニュー表示を更新
+            updateMenuDisplay() {
+                const width = window.innerWidth;
+                const toggleBtn = document.getElementById('menu-page-toggle-btn');
+                
+                if (width <= 700) {
+                    // 700px以下：ページネーション表示
+                    const page1Buttons = [
+                        document.getElementById('open-face-btn'),
+                        document.getElementById('top-mode-button'),
+                        document.getElementById('open-frame-btn'),
+                        document.getElementById('texture-btn'),
+                        document.getElementById('color-window-btn')
+                    ];
+                    
+                    const page2Buttons = [
+                        document.getElementById('reload-frame-btn'),
+                        document.getElementById('test-mode-btn'),
+                        document.getElementById('info-window-btn'),
+                        document.getElementById('save-image-btn')
+                    ];
+                    
+                    // 全てのボタンを非表示
+                    [...page1Buttons, ...page2Buttons].forEach(btn => {
+                        if (btn) btn.classList.remove('page-visible');
+                    });
+                    
+                    // 現在のページのボタンのみ表示
+                    const currentButtons = this.menuPage === 0 ? page1Buttons : page2Buttons;
+                    currentButtons.forEach(btn => {
+                        if (btn) btn.classList.add('page-visible');
+                    });
+                    
+                    // トグルボタン表示とmargin-left制御
+                    if (toggleBtn) {
+                        toggleBtn.style.display = 'flex';
+                        // ページ1: margin-left: auto、ページ2: margin-leftなし
+                        toggleBtn.style.marginLeft = this.menuPage === 0 ? 'auto' : '';
+                    }
+                } else {
+                    // 700px超：全表示、ページネーション非表示
+                    const buttons = document.querySelectorAll('.chevron-button, .menu-toggle');
+                    buttons.forEach(btn => btn.classList.add('page-visible'));
+                    
+                    if (toggleBtn) toggleBtn.style.display = 'none';
+                }
             }
 
             // ダミーフレーム画像を生成（30個）
