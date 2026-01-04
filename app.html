@@ -3535,6 +3535,11 @@
                     if (this.availableTextures.length === 0) {
                         this.loadTextureList().then(() => {
                             this.renderTextureGrid();
+                        }).catch(error => {
+                            console.error('テクスチャリストの読み込み中にエラーが発生しました:', error);
+                            // エラー時はデフォルトテクスチャで再試行
+                            this.availableTextures = this.getDefaultTextures();
+                            this.renderTextureGrid();
                         });
                     } else {
                         this.renderTextureGrid();
