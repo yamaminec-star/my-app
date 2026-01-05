@@ -384,6 +384,7 @@ export class FaceMeasurementApp {
                 }
                 
                 this.saveSettings();
+                topRealSizeInput.blur();  // 追加：キーボードを閉じる
             });
         }
         
@@ -401,6 +402,7 @@ export class FaceMeasurementApp {
                 }
                 
                 this.saveSettings();
+                frameRealSizeInput.blur();  // 追加：キーボードを閉じる
             });
         }
         //　拡大鏡ウインドウ閉じる
@@ -479,6 +481,12 @@ export class FaceMeasurementApp {
                     this.updateScaleLink();
                 }
             });
+
+            // Enterキー押下でキーボードを閉じる
+            scaleInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    scaleInput.blur();
+                }
         }
         
 
@@ -488,6 +496,14 @@ export class FaceMeasurementApp {
             notesTextarea.addEventListener('input', () => {
                 this.notes = notesTextarea.value;
                 this.saveSettings();
+            });
+
+             // Enterキー押下でキーボードを閉じる（改行なしの場合）
+            notesTextarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    notesTextarea.blur();
+                }
             });
         }
         // メニューページネーションのイベントリスナー
@@ -509,7 +525,7 @@ export class FaceMeasurementApp {
         }
     }
 
-    
+
      toggleFullscreen() {
         const btn = document.getElementById('fullscreen-btn');
         const icon = btn ? btn.querySelector('span') : null;
