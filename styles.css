@@ -23,7 +23,7 @@
     --border-lighter: #888;
     
     /* アクセント */
-    --accent-primary: #8a5757;/*選択後*/
+    --accent-primary: #41533c;/*選択後*/
     --accent-hover: #8fc987;/*選択前*/
     --accent-gray: #d1f7ad;/*ボタン囲い*/
     --accent-handle: #55c43f73;/*スライダーハンドル*/
