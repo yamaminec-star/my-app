@@ -487,7 +487,7 @@ export class FaceMeasurementApp {
                 if (e.key === 'Enter') {
                     scaleInput.blur();
                 }
-        }
+        });
         
 
          // 備考欄の変更イベント
