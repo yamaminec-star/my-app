@@ -488,7 +488,7 @@ export class FaceMeasurementApp {
                     scaleInput.blur();
                 }
         });
-        
+    }   
 
          // 備考欄の変更イベント
         const notesTextarea = document.getElementById('notes-textarea');
