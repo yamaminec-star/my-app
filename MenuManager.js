@@ -83,7 +83,8 @@ export function updateMenuDisplay() {
             document.getElementById('test-mode-btn'),
             document.getElementById('export-text-btn'),
             document.getElementById('info-window-btn'),
-            document.getElementById('save-image-btn')
+            document.getElementById('save-image-btn'),
+            document.getElementById('fullscreen-btn')
         ];
         
         // 全てのボタンを非表示

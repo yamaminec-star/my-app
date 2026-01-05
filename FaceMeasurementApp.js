@@ -366,7 +366,10 @@ export class FaceMeasurementApp {
             this.setAdjustMode();
             this.saveImage();
         });
-        
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        if (fullscreenBtn) fullscreenBtn.addEventListener('click', () => {
+             this.toggleFullscreen();
+        });
         // PD値入力
         const topRealSizeInput = document.getElementById('top-real-size');
         if (topRealSizeInput) {
@@ -505,6 +508,32 @@ export class FaceMeasurementApp {
             this.updateMenuDisplay();
         }
     }
+
+    
+     toggleFullscreen() {
+        const btn = document.getElementById('fullscreen-btn');
+        const icon = btn ? btn.querySelector('span') : null;
+        
+        if (!document.fullscreenElement) {
+            // 全画面化
+            document.documentElement.requestFullscreen().then(() => {
+                if (icon) icon.textContent = 'fullscreen_exit';
+            }).catch(err => {
+                console.error('全画面表示に失敗:', err);
+            });
+        } else {
+            // 全画面解除
+            document.exitFullscreen().then(() => {
+                if (icon) icon.textContent = 'fullscreen';
+            }).catch(err => {
+                console.error('全画面解除に失敗:', err);
+            });
+        }
+    }
+    
+
+
+
 
      exportDataToText() {
         const now = new Date();
